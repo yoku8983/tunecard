@@ -31,6 +31,7 @@ const SPOTIFY_URL =
 describe('App', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
   });
 
   it('初期状態で使い方ガイドが表示され、リセットボタンは非表示', () => {

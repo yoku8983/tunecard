@@ -1,13 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useTrackInfo } from './hooks/useTrackInfo.ts';
+import { useShareSettings } from './hooks/useShareSettings.ts';
+import { buildTemplate } from './core/template-builder.ts';
 import { UrlInput } from './components/UrlInput.tsx';
 import { ErrorMessage } from './components/ErrorMessage.tsx';
 import { ResultCard } from './components/ResultCard.tsx';
 import { UsageGuide } from './components/UsageGuide.tsx';
 
 function App() {
+  const { settings, updateSettings } = useShareSettings();
+  const template = useMemo(() => buildTemplate(settings), [settings]);
   const { trackInfo, isLoading, error, comment, shareText, setComment, fetchTrack, reset } =
-    useTrackInfo();
+    useTrackInfo(template);
   const [resetKey, setResetKey] = useState(0);
 
   const handleReset = useCallback(() => {
@@ -41,6 +45,8 @@ function App() {
             shareText={shareText}
             comment={comment}
             onCommentChange={setComment}
+            settings={settings}
+            onSettingsChange={updateSettings}
           />
         )}
 

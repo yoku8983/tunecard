@@ -18,7 +18,7 @@ export interface UseTrackInfoReturn {
   reset: () => void;
 }
 
-export function useTrackInfo(): UseTrackInfoReturn {
+export function useTrackInfo(template: string = DEFAULT_TEMPLATE): UseTrackInfoReturn {
   const [trackInfo, setTrackInfo] = useState<TrackInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +35,8 @@ export function useTrackInfo(): UseTrackInfoReturn {
 
   const shareText = useMemo(() => {
     if (!trackInfo) return '';
-    return formatShareText(trackInfo, DEFAULT_TEMPLATE, comment || undefined);
-  }, [trackInfo, comment]);
+    return formatShareText(trackInfo, template, comment || undefined);
+  }, [trackInfo, comment, template]);
 
   const reset = useCallback(() => {
     setTrackInfo(null);
