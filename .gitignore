@@ -31,3 +31,6 @@ dist-ssr
 
 # Windows Zone.Identifier
 *:Zone.Identifier
+
+# Wrangler
+.wrangler/

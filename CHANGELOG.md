@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-26
+
+### Added
+
+- Spotify Web APIによるアーティスト名取得（Cloudflare Workers + Client Credentials Flow）
+- Provider抽象化パターンにWebApiProviderを追加（Worker未設定時はoEmbedにフォールバック）
+- Cloudflare Workers デプロイの自動化（GitHub Actions）
+
+### Changed
+
+- CI に Worker 側の typecheck を追加
+- デプロイワークフローにフロントビルド時の `VITE_WORKER_URL` 注入を追加
+
 ## [1.0.0] - 2026-06-25
 
 ### Added
@@ -21,4 +34,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Known Issues
 
-- アーティスト名が取得できない（oEmbed API制約）→ Issue #2 で対応予定
+- ~~アーティスト名が取得できない（oEmbed API制約）~~ → v1.1.0 で解決

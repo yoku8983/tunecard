@@ -55,31 +55,60 @@ npm run format        # Prettier
 - Tailwind CSS v4
 - Vitest
 - vite-plugin-pwa
-- Cloudflare Pages（ホスティング）
+- Cloudflare Pages（フロントエンド ホスティング）
+- Cloudflare Workers（Spotify Web API プロキシ）
 
 ## デプロイ
 
-Cloudflare Pagesで自動デプロイ。mainブランチへのpushでCI → ビルド → デプロイが実行される。
+Cloudflare Pages（フロント）+ Cloudflare Workers（APIプロキシ）の2層構成。mainブランチへのpushで両方が自動デプロイされる。
 
-### 必要なGitHub Secrets
+### 必要なGitHub設定
 
-| Secret | 用途 |
-|--------|------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare APIトークン（Pages編集権限） |
-| `CLOUDFLARE_ACCOUNT_ID` | CloudflareアカウントID |
+| 種類 | 名前 | 用途 |
+|------|------|------|
+| Secret | `CLOUDFLARE_API_TOKEN` | Cloudflare APIトークン（Pages + Workers 編集権限） |
+| Secret | `CLOUDFLARE_ACCOUNT_ID` | CloudflareアカウントID |
+| Variable | `WORKER_URL` | Worker URL（例: `https://tunecard-api.xxx.workers.dev`） |
+
+> `WORKER_URL` 未設定でもフロントは動作する（oEmbedフォールバック、ただしアーティスト名は取得不可）。
+
+### Worker 初回セットアップ
+
+```bash
+cd worker
+npm ci
+
+# 1. Worker をデプロイ
+npx wrangler deploy
+
+# 2. Spotify API のシークレットを設定
+npx wrangler secret put SPOTIFY_CLIENT_ID
+npx wrangler secret put SPOTIFY_CLIENT_SECRET
+
+# 3. GitHub Repository Variables に Worker URL を設定
+#    Settings → Secrets and variables → Actions → Variables
+#    Name: WORKER_URL
+#    Value: https://tunecard-api.<your-subdomain>.workers.dev
+```
 
 ### 手動デプロイ
 
 ```bash
-npm run build
+# フロントエンド
+VITE_WORKER_URL=https://tunecard-api.xxx.workers.dev npm run build
 npx wrangler pages deploy dist --project-name=tunecard
+
+# Worker
+cd worker && npx wrangler deploy
 ```
 
-### CI/CDパイプライン
+### CI/CD パイプライン
 
-- `.github/workflows/ci.yml` — PR/push時: lint → typecheck → test → build
-- `.github/workflows/deploy.yml` — main push時: build → Cloudflare Pages デプロイ
-- `.github/workflows/contract-test.yml` — 毎週月曜 9:00 UTC: Spotify API仕様変更検知
+| ワークフロー | トリガー | 内容 |
+|------------|---------|------|
+| `ci.yml` | push / PR to main | フロント: lint → typecheck → test → build / Worker: typecheck |
+| `deploy.yml` | push to main | フロント: build → Pages デプロイ / Worker: wrangler deploy（並列） |
+| `contract-test.yml` | 毎週月曜 9:00 UTC | Spotify API 仕様変更検知（失敗時 Issue 自動作成） |
 
 ## アーキテクチャ
 

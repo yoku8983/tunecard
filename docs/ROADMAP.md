@@ -11,7 +11,7 @@
 ## v1.1（次期リリース）— 開発中
 
 - [x] [#2](https://github.com/yoku8983/tunecard/issues/2) Spotify Web APIでアーティスト名取得（Cloudflare Workers + Client Credentials Flow）
-- [ ] M4: Cloudflare Pagesデプロイ + カスタムドメイン設定
+- [x] M4: Cloudflare Pages + Workers デプロイ自動化
 
 ## v1.x（将来）— 未着手
 
