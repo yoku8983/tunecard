@@ -23,7 +23,7 @@ export function ResultCard({ trackInfo, shareText, comment, onCommentChange }: R
 
       <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400">プレビュー</p>
-        <p className="mt-1 whitespace-pre-wrap text-sm">{shareText}</p>
+        <p className="mt-1 break-all whitespace-pre-wrap text-sm">{shareText}</p>
       </div>
 
       <ActionButtons shareText={shareText} />
