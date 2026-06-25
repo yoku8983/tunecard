@@ -13,11 +13,9 @@ parseSpotifyUrl(input)  ──→  null (invalid) ──→ Error UI
   ▼ SpotifyUrl
 FallbackTrackInfoProvider.fetchTrackInfo(spotifyUrl)
   │
-  ├─ OEmbedProvider (browser fetch, 認証不要)
+  ├─ WebApiProvider (Cloudflare Worker経由, Spotify Web API)
   │   └─ 失敗時 ──→ 次のProviderへ
-  ├─ ProxiedOEmbedProvider (Cloudflare Worker経由, CORS fallback)
-  │   └─ 失敗時 ──→ 次のProviderへ
-  └─ HTMLMetaProvider (Worker経由 OGPスクレイピング)
+  └─ OEmbedProvider (browser fetch, 認証不要)
       └─ 失敗時 ──→ 全Provider失敗エラー
   │
   ▼ TrackInfo
@@ -74,6 +72,7 @@ interface OEmbedResponse {
 | `spotify-url-parser` | `parseSpotifyUrl(input: string)` | 任意の文字列 | `SpotifyUrl \| null` | null を返す |
 | `oembed-title-parser` | `parseSpotifyTitle(rawTitle: string)` | oEmbed title or HTMLタイトル | `{ title: string; artist: string \| null }` | rawTitleをそのままtitleに、artist=null |
 | `share-text-formatter` | `formatShareText(info: TrackInfo, template: string, comment?: string)` | TrackInfo + テンプレート + コメント | 整形済みテキスト | — |
+| `web-api-provider` | `WebApiProvider.fetchTrackInfo(url)` | SpotifyUrl | `Promise<TrackInfo>` | Error throw |
 | `oembed-provider` | `OEmbedProvider.fetchTrackInfo(url)` | SpotifyUrl | `Promise<TrackInfo>` | Error throw |
 | `fallback-provider` | `FallbackTrackInfoProvider.fetchTrackInfo(url)` | SpotifyUrl | `Promise<TrackInfo>` | 最後のエラーをthrow |
 
@@ -102,4 +101,4 @@ Spotify oEmbed API (`https://open.spotify.com/oembed?url={url}`) のレスポン
 - Track: `"Shape of You - song and lyrics by Ed Sheeran | Spotify"`
 - Album: `"Discovery - Album by Daft Punk | Spotify"`
 
-MVPではoEmbedのみ使用するため、`artist` は基本的に `null` となる。将来的にCloudflare Worker経由でHTMLページをフェッチすることでアーティスト名を取得可能。
+v1.1 より `WebApiProvider` を導入し、Cloudflare Worker 経由で Spotify Web API (Client Credentials Flow) を呼び出すことでアーティスト名を取得。Worker 未設定時は oEmbed にフォールバックし、`artist` は `null` となる。

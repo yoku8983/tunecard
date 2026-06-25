@@ -5,6 +5,7 @@ import { parseSpotifyUrl } from '../core/spotify-url-parser.ts';
 import { formatShareText } from '../core/share-text-formatter.ts';
 import { FallbackTrackInfoProvider } from '../core/providers/fallback-provider.ts';
 import { OEmbedProvider } from '../core/providers/oembed-provider.ts';
+import { WebApiProvider } from '../core/providers/web-api-provider.ts';
 
 export interface UseTrackInfoReturn {
   trackInfo: TrackInfo | null;
@@ -24,7 +25,12 @@ export function useTrackInfo(): UseTrackInfoReturn {
   const [comment, setComment] = useState('');
 
   const providerRef = useRef(
-    new FallbackTrackInfoProvider([new OEmbedProvider()]),
+    new FallbackTrackInfoProvider([
+      ...(import.meta.env.VITE_WORKER_URL
+        ? [new WebApiProvider(import.meta.env.VITE_WORKER_URL)]
+        : []),
+      new OEmbedProvider(),
+    ]),
   );
 
   const shareText = useMemo(() => {

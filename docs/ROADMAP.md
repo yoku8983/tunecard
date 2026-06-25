@@ -8,9 +8,9 @@
 - [x] CI/CD パイプライン
 - [x] Contract Tests（週次）
 
-## v1.1（次期リリース）— 計画中
+## v1.1（次期リリース）— 開発中
 
-- [ ] [#2](https://github.com/yoku8983/tunecard/issues/2) Spotify Web APIでアーティスト名取得（Cloudflare Workers + Client Credentials Flow）
+- [x] [#2](https://github.com/yoku8983/tunecard/issues/2) Spotify Web APIでアーティスト名取得（Cloudflare Workers + Client Credentials Flow）
 - [ ] M4: Cloudflare Pagesデプロイ + カスタムドメイン設定
 
 ## v1.x（将来）— 未着手
