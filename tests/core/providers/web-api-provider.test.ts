@@ -8,10 +8,34 @@ const mockSpotifyUrl: SpotifyUrl = {
   spotifyId: '6rqhFgbbKwnb9MLmUQDhG6',
 };
 
+const mockAlbumUrl: SpotifyUrl = {
+  originalUrl: 'https://open.spotify.com/album/2noRn2Aes5aoNVsU6iWThc',
+  contentType: 'album',
+  spotifyId: '2noRn2Aes5aoNVsU6iWThc',
+};
+
+const mockPlaylistUrl: SpotifyUrl = {
+  originalUrl: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+  contentType: 'playlist',
+  spotifyId: '37i9dQZF1DXcBWIGoYBM5M',
+};
+
 const validWorkerResponse = {
   title: 'Shape of You',
   artist: 'Ed Sheeran',
   thumbnailUrl: 'https://i.scdn.co/image/abc123',
+};
+
+const validAlbumResponse = {
+  title: 'Discovery',
+  artist: 'Daft Punk',
+  thumbnailUrl: 'https://i.scdn.co/image/album123',
+};
+
+const validPlaylistResponse = {
+  title: "Today's Top Hits",
+  artist: 'Spotify',
+  thumbnailUrl: 'https://i.scdn.co/image/playlist123',
 };
 
 const WORKER_URL = 'https://tunecard-api.example.workers.dev';
@@ -111,6 +135,107 @@ describe('WebApiProvider', () => {
       );
 
       await expect(provider.fetchTrackInfo(mockSpotifyUrl)).rejects.toThrow();
+    });
+  });
+
+  describe('album fetch', () => {
+    it('returns TrackInfo for album URL', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(validAlbumResponse),
+        }),
+      );
+
+      const result = await provider.fetchTrackInfo(mockAlbumUrl);
+      expect(result.title).toBe('Discovery');
+      expect(result.artist).toBe('Daft Punk');
+      expect(result.spotifyUrl).toBe(mockAlbumUrl.originalUrl);
+      expect(result.thumbnailUrl).toBe('https://i.scdn.co/image/album123');
+    });
+
+    it('constructs correct worker URL for album', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(validAlbumResponse),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await provider.fetchTrackInfo(mockAlbumUrl);
+
+      const calledUrl = mockFetch.mock.calls[0]![0] as string;
+      expect(calledUrl).toBe(
+        `${WORKER_URL}/album?id=2noRn2Aes5aoNVsU6iWThc`,
+      );
+    });
+  });
+
+  describe('playlist fetch', () => {
+    it('returns TrackInfo for playlist URL', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(validPlaylistResponse),
+        }),
+      );
+
+      const result = await provider.fetchTrackInfo(mockPlaylistUrl);
+      expect(result.title).toBe("Today's Top Hits");
+      expect(result.artist).toBe('Spotify');
+      expect(result.spotifyUrl).toBe(mockPlaylistUrl.originalUrl);
+      expect(result.thumbnailUrl).toBe('https://i.scdn.co/image/playlist123');
+    });
+
+    it('handles null artist for playlist', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ ...validPlaylistResponse, artist: null }),
+        }),
+      );
+
+      const result = await provider.fetchTrackInfo(mockPlaylistUrl);
+      expect(result.artist).toBeNull();
+    });
+
+    it('constructs correct worker URL for playlist', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(validPlaylistResponse),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await provider.fetchTrackInfo(mockPlaylistUrl);
+
+      const calledUrl = mockFetch.mock.calls[0]![0] as string;
+      expect(calledUrl).toBe(
+        `${WORKER_URL}/playlist?id=37i9dQZF1DXcBWIGoYBM5M`,
+      );
+    });
+  });
+
+  describe('unsupported content types', () => {
+    it('throws for artist content type', async () => {
+      const artistUrl: SpotifyUrl = {
+        originalUrl: 'https://open.spotify.com/artist/abc123',
+        contentType: 'artist',
+        spotifyId: 'abc123',
+      };
+
+      await expect(provider.fetchTrackInfo(artistUrl)).rejects.toThrow();
+    });
+
+    it('throws for unknown content type', async () => {
+      const unknownUrl: SpotifyUrl = {
+        originalUrl: 'https://spotify.link/abc123',
+        contentType: 'unknown',
+        spotifyId: 'abc123',
+      };
+
+      await expect(provider.fetchTrackInfo(unknownUrl)).rejects.toThrow();
     });
   });
 
