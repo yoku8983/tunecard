@@ -31,3 +31,13 @@ export interface OEmbedResponse {
 }
 
 export const DEFAULT_TEMPLATE = '{title} / {artist} #NowPlaying\n{url}';
+
+export interface ShareSettings {
+  readonly includeNowPlaying: boolean;
+  readonly customHashtag: string;
+}
+
+export const DEFAULT_SHARE_SETTINGS: ShareSettings = {
+  includeNowPlaying: true,
+  customHashtag: '',
+};
