@@ -1,53 +1,63 @@
 # TuneCard — Product Requirements Document
 
+> **v2.0** — Webアプリ + PWA版（iOS Share Extension版から方針転換）
+
 ## 1. プロダクト概要
 
-**TuneCard** は、Spotifyで聴いている曲をX（旧Twitter）にシェアする際、曲名・アーティスト名を含む整形テキストをワンタップで生成するiOS Share Extensionアプリ。
+**TuneCard** は、Spotifyで聴いている曲をX（旧Twitter）にシェアする際、曲名・アーティスト名を含む整形テキストをワンタップで生成するWebアプリ（PWA）。
 
-Spotifyの標準シェア機能ではXへの投稿にリンクしか含まれず、曲名・アーティスト名がテキストに入らない。既存のワークアラウンド（iOSショートカット、IFTTT）はSpotifyの仕様変更で頻繁に壊れる問題がある。TuneCardはShare Extensionとして常駐し、Spotifyの共有シートから直接起動することで、最小ステップでの投稿を実現する。
+Spotifyの標準シェア機能ではXへの投稿にリンクしか含まれず、曲名・アーティスト名がテキストに入らない。既存のワークアラウンド（iOSショートカット、IFTTT）はSpotifyの仕様変更で頻繁に壊れる。TuneCardはPWAとしてホーム画面に常駐し、Spotifyからコピーしたリンクをペーストするだけで投稿用テキストを生成する。
 
 ### 対象ユーザー
 
-自分自身（個人ツール）。GitHub公開前提で、同じ課題を持つユーザーにも使ってもらえる設計にする。
+自分自身（個人ツール）。GitHub公開前提で同じ課題を持つユーザーにも使ってもらう。
 
 ### 競合状況
 
-専用のiOSアプリは存在しない。iOSショートカットやIFTTTによるワークアラウンドのみ。いずれもSpotify仕様変更への追従が困難で、安定的に使えるプロダクトがない空白地帯。
+この課題を解決する専用Webアプリ・iOSアプリは存在しない。iOSショートカットやIFTTTによるワークアラウンドのみ。いずれもSpotify仕様変更への追従が困難。
+
+### なぜWebアプリか
+
+- 開発環境にMacが不要（WSL2 + Claude Codeで完結）
+- プラットフォーム非依存（iOS/Android/PC全対応）
+- App Store審査・Apple Developer Program登録（$99/年）が不要
+- PWA化でホーム画面追加 → ネイティブアプリに近い起動体験
 
 
 ## 2. ユーザーストーリーと要求仕様
 
 ### US-1: 基本シェアフロー（MVP）
 
-**ストーリー:** Spotifyで曲を聴いていて「この曲シェアしたい」と思ったとき、Spotifyの共有ボタン → TuneCardを選択 → 曲名・アーティスト名・リンクが整形されたテキストが表示される → コピーまたはXアプリへ遷移して投稿する。
+**ストーリー:** Spotifyで曲を聴いていて「この曲シェアしたい」と思ったとき、Spotifyのリンクをコピー → TuneCard（ホーム画面のPWA）を開く → URLを貼り付ける → 曲名・アーティスト名・リンクが整形されたテキストが表示される → コピーまたはXの投稿画面に遷移して投稿する。
 
 **受け入れ条件:**
-- Spotifyの共有シートからTuneCardが選択できる
-- Spotify楽曲URLを受け取り、曲名・アーティスト名を取得できる
-- デフォルトフォーマットでテキストが生成される（例: `曲名 / アーティスト名 #NowPlaying\nhttps://open.spotify.com/track/xxx`）
-- 「クリップボードにコピー」ボタンでテキストをコピーできる
-- 「Xで投稿」ボタンでXアプリの投稿画面に遷移し、テキストが入力済みの状態になる
-- ネットワークエラー時に適切なエラーメッセージが表示される
+- 入力欄にSpotify URLをペーストできる
+- ペースト後、自動で楽曲情報を取得し整形テキストを表示する
+- デフォルトフォーマット: `{title} / {artist} #NowPlaying\n{url}`
+- 「コピー」ボタンでテキストをクリップボードにコピーできる
+- 「Xで投稿」ボタンでXの投稿画面に遷移し、テキストが入力済みの状態になる
+- 処理中はローディング表示、エラー時はメッセージを表示する
+- 不正なURL（Spotify以外）にはエラーメッセージを出す
 
 ### US-2: テキストフォーマットのカスタマイズ
 
-**ストーリー:** シェアするテキストのフォーマットを自分好みにカスタマイズしたい。ハッシュタグの有無、絵文字、フォーマットの並び順などを設定画面から変更できる。
+**ストーリー:** シェアするテキストのフォーマットを自分好みに変更したい。
 
 **受け入れ条件:**
-- ホストアプリ（TuneCardメインアプリ）内に設定画面がある
-- フォーマットテンプレートを編集できる（プレースホルダー: `{title}`, `{artist}`, `{url}`）
-- デフォルトテンプレート: `{title} / {artist} #NowPlaying\n{url}`
-- プリセットテンプレートを複数用意する（シンプル、詳細、ハッシュタグなし等）
-- 設定はApp Groupsを通じてShare Extensionと共有される
+- 設定画面でフォーマットテンプレートを編集できる
+- プレースホルダー: `{title}`, `{artist}`, `{url}`
+- デフォルト: `{title} / {artist} #NowPlaying\n{url}`
+- プリセット複数あり（シンプル、ハッシュタグなし等）
+- 設定はlocalStorageに保存される
 
 ### US-3: 一言コメントの追加
 
-**ストーリー:** シェアテキストに自分のコメントを一言添えたい。
+**ストーリー:** シェアテキストに自分のコメントを添えたい。
 
 **受け入れ条件:**
-- Share Extension画面にコメント入力欄がある
-- 入力したコメントがフォーマットテキストの先頭（または末尾、設定次第）に追加される
-- コメントは任意（空欄でもシェア可能）
+- テキスト生成後、コメント入力欄に一言入力できる
+- コメントが整形テキストの先頭に追加される
+- コメントは任意（空欄でもOK）
 
 ### US-4: アルバム・プレイリストのシェア対応
 
@@ -56,41 +66,50 @@ Spotifyの標準シェア機能ではXへの投稿にリンクしか含まれず
 **受け入れ条件:**
 - `open.spotify.com/album/xxx` 形式のURLに対応
 - `open.spotify.com/playlist/xxx` 形式のURLに対応
-- それぞれ適切なタイトル情報を取得して整形する
-- 楽曲以外のSpotify URL（アーティストページ等）でも可能な範囲で対応する
+- 適切なタイトル情報を取得して整形する
 
-### US-5: シェア履歴
+### US-5: PWA対応
+
+**ストーリー:** スマホのホーム画面からワンタップで起動したい。
+
+**受け入れ条件:**
+- PWAとしてインストール可能（manifest.json, Service Worker）
+- ホーム画面アイコンがある
+- オフライン時は前回の設定・UIが表示される（APIは当然オンライン必須）
+- スプラッシュスクリーンがある
+
+### US-6: シェア履歴
 
 **ストーリー:** 過去にシェアした曲を振り返りたい。
 
 **受け入れ条件:**
-- ホストアプリ内でシェア履歴一覧が確認できる
-- 曲名、アーティスト名、シェア日時が表示される
+- シェア履歴一覧を画面内で確認できる
+- 曲名、アーティスト名、日時を表示
 - 履歴からの再シェアが可能
+- IndexedDB or localStorageに保存
 
 
 ## 3. MVP定義
 
 ### MVP（v1.0）スコープ — IN
 
-- US-1: 基本シェアフロー（Share Extension + テキスト生成 + コピー/X遷移）
+- US-1: 基本シェアフロー（URL入力 → テキスト生成 → コピー/X遷移）
 - US-3: 一言コメント入力
-- ホストアプリはShare Extensionの説明・使い方画面のみ（最小構成）
+- US-5: PWA対応（ホーム画面追加可能な状態）
+- レスポンシブデザイン（モバイルファースト）
 
 ### MVP後（v1.x）スコープ — LATER
 
 - US-2: フォーマットカスタマイズ
 - US-4: アルバム・プレイリスト対応
-- US-5: シェア履歴
-- Apple Watchコンプリケーション
-- Widgetからのクイックシェア
+- US-6: シェア履歴
 
 ### スコープ外 — OUT
 
 - 画像（ジャケット写真）の添付
-- Spotify OAuth認証フロー（MVPではoEmbed APIで認証不要）
+- Spotify OAuth認証フロー
 - X以外のSNS対応（Threads, Bluesky等）
-- 収益化機能（広告、課金）
+- 収益化機能
 - 楽曲の再生機能
 
 
@@ -99,270 +118,283 @@ Spotifyの標準シェア機能ではXへの投稿にリンクしか含まれず
 ### 4.1 全体構成
 
 ```
-┌─────────────────────────────────────────────────┐
-│ TuneCard.app (Host App)                         │
-│  - 使い方説明                                     │
-│  - 設定画面（v1.x）                               │
-│  - シェア履歴（v1.x）                              │
-└─────────────────────────────────────────────────┘
-           │ App Groups (共有UserDefaults)
-┌─────────────────────────────────────────────────┐
-│ TuneCardShare (Share Extension)                 │
-│  - SpotifyURL受信                                │
-│  - TrackInfoProvider呼び出し                      │
-│  - テキスト整形                                   │
-│  - コピー / X遷移                                 │
-└─────────────────────────────────────────────────┘
-           │
-┌─────────────────────────────────────────────────┐
-│ TuneCardCore (Shared Framework)                 │
-│  - TrackInfoProvider (Protocol)                 │
-│  - OEmbedProvider (実装: 認証不要)               │
-│  - WebAPIProvider (実装: OAuth, v1.x)           │
-│  - HTMLMetaProvider (実装: OGPスクレイピング)     │
-│  - SpotifyURLParser                             │
-│  - ShareTextFormatter                           │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  Browser (PWA)                                       │
+│                                                      │
+│  ┌─────────────┐   ┌─────────────┐   ┌───────────┐  │
+│  │ URL Input   │──▶│ TrackInfo   │──▶│ Text      │  │
+│  │ (Paste)     │   │ Fetcher     │   │ Formatter │  │
+│  └─────────────┘   └──────┬──────┘   └─────┬─────┘  │
+│                           │                 │        │
+│                    ┌──────▼──────┐   ┌──────▼─────┐  │
+│                    │ Copy to     │   │ Open X     │  │
+│                    │ Clipboard   │   │ (intent)   │  │
+│                    └─────────────┘   └────────────┘  │
+└───────────────────────────┬──────────────────────────┘
+                            │ fetch
+                ┌───────────▼───────────┐
+                │  Spotify oEmbed API   │
+                │  (CORS対応・認証不要) │
+                └───────────────────────┘
+                            │ フォールバック
+                ┌───────────▼───────────┐
+                │  Serverless Proxy     │
+                │  (Cloudflare Worker)  │
+                └───────────────────────┘
 ```
 
 ### 4.2 技術スタック
 
 | レイヤー | 技術選定 | 理由 |
 |---------|---------|------|
-| 言語 | Swift | iOS標準、Share Extensionとの相性 |
-| UI | SwiftUI | 宣言的UI、少ないコード量でMVP達成 |
-| アーキテクチャ | MVVM + Protocol-oriented | テスタビリティ、Provider差し替えの容易さ |
-| ネットワーク | URLSession | 外部依存ゼロ、Share Extension内で軽量 |
-| データ永続化 | UserDefaults (App Groups) | 設定共有。履歴はSwiftData (v1.x) |
-| テスト | XCTest + Swift Testing | 標準テストフレームワーク |
-| CI | GitHub Actions | 自動テスト・ビルド |
-| 最小対応OS | iOS 17.0 | SwiftUI最新機能の活用、ユーザーの大半をカバー |
+| 言語 | TypeScript | 型安全、Claude Codeとの相性 |
+| フレームワーク | React + Vite | 高速ビルド、シンプル構成 |
+| テスト | Vitest | Viteと統合、高速実行 |
+| PWA | vite-plugin-pwa | Service Worker自動生成 |
+| スタイリング | Tailwind CSS | ユーティリティファースト、モバイル対応 |
+| ホスティング | Cloudflare Pages | 無料、高速CDN、Workers統合 |
+| APIプロキシ | Cloudflare Workers | oEmbed CORS問題時のフォールバック |
+| CI | GitHub Actions | 自動テスト・デプロイ |
+| リンター | ESLint + Prettier | コード品質統一 |
 
 
 ### 4.3 仕様変更耐性の設計（重要）
 
-Spotifyの仕様変更に対して**壊れにくく、壊れても直しやすい**設計を初期から組み込む。
+Spotifyの仕様変更に対して**壊れにくく、壊れても直しやすい**設計。
 
 #### 4.3.1 Provider抽象化パターン
 
-楽曲情報の取得を `TrackInfoProvider` protocolで抽象化し、複数の実装を用意する。
+楽曲情報の取得を共通interfaceで抽象化し、複数実装+フォールバックを用意する。
 
-```swift
-protocol TrackInfoProvider {
-    func fetchTrackInfo(from url: SpotifyURL) async throws -> TrackInfo
+```typescript
+interface TrackInfo {
+  title: string;       // 曲名
+  artist: string;      // アーティスト名
+  spotifyUrl: string;  // 元のSpotify URL
+  albumName?: string;  // アルバム名（任意）
 }
 
-struct TrackInfo {
-    let title: String       // 曲名
-    let artist: String      // アーティスト名
-    let spotifyURL: URL     // 元のSpotify URL
-    let albumName: String?  // アルバム名（任意）
+interface TrackInfoProvider {
+  name: string;
+  fetchTrackInfo(url: SpotifyUrl): Promise<TrackInfo>;
 }
 ```
 
-**実装の優先順位（フォールバックチェーン）:**
+**フォールバックチェーン（優先順位）:**
 
-1. **OEmbedProvider**（MVP、認証不要）
+1. **OEmbedProvider**（MVP、認証不要、ブラウザ直接fetch）
    - エンドポイント: `https://open.spotify.com/oembed?url={spotify_url}`
    - レスポンスの `title` フィールドから曲名・アーティスト名をパース
-   - 認証不要のため最もシンプルかつ安定
+   - CORS対応済み（2021年以降）
 
-2. **HTMLMetaProvider**（フォールバック）
-   - SpotifyのWebページからOpen Graphメタタグ（`og:title`, `og:description`）を取得
-   - oEmbedが壊れた場合のバックアップ
-   - Web APIの認証なしで動作
+2. **ProxiedOEmbedProvider**（CORSフォールバック）
+   - Cloudflare Worker経由で同じoEmbed APIを叩く
+   - ブラウザ直接fetchでCORSエラーが発生した場合に自動切り替え
 
-3. **WebAPIProvider**（将来拡張、認証必要）
-   - Spotify Web API `GET /v1/tracks/{id}` で最も正確な情報を取得
-   - OAuth認証が必要なためMVPでは実装しない
+3. **HTMLMetaProvider**（Cloudflare Worker経由）
+   - SpotifyのWebページからOGPメタタグ（`og:title`, `og:description`）をスクレイピング
+   - oEmbed API自体が廃止・変更された場合のバックアップ
 
-#### 4.3.2 フォールバックチェーン
+#### 4.3.2 フォールバック実装
 
-```swift
-final class FallbackTrackInfoProvider: TrackInfoProvider {
-    private let providers: [TrackInfoProvider]
-    
-    func fetchTrackInfo(from url: SpotifyURL) async throws -> TrackInfo {
-        var lastError: Error?
-        for provider in providers {
-            do {
-                return try await provider.fetchTrackInfo(from: url)
-            } catch {
-                lastError = error
-                // ログ記録: どのProviderが失敗したか
-                continue
-            }
-        }
-        throw lastError ?? TrackInfoError.allProvidersFailed
+```typescript
+class FallbackTrackInfoProvider implements TrackInfoProvider {
+  name = "fallback";
+  constructor(private providers: TrackInfoProvider[]) {}
+
+  async fetchTrackInfo(url: SpotifyUrl): Promise<TrackInfo> {
+    let lastError: Error | undefined;
+    for (const provider of this.providers) {
+      try {
+        const result = await provider.fetchTrackInfo(url);
+        return result;
+      } catch (error) {
+        console.warn(`[${provider.name}] failed:`, error);
+        lastError = error as Error;
+      }
     }
+    throw lastError ?? new Error("All providers failed");
+  }
 }
 ```
 
 #### 4.3.3 SpotifyURLParser の分離
 
-URL形式の変更に備え、URLパースロジックを独立したモジュールに切り出す。
+URL形式の変更に備え、パースロジックを独立モジュールに分離する。
 
-```swift
-struct SpotifyURL {
-    let originalURL: URL
-    let contentType: ContentType  // .track, .album, .playlist, .artist, .unknown
-    let spotifyID: String
-    
-    enum ContentType: String {
-        case track, album, playlist, artist, unknown
-    }
+```typescript
+interface SpotifyUrl {
+  originalUrl: string;
+  contentType: "track" | "album" | "playlist" | "artist" | "unknown";
+  spotifyId: string;
 }
 
-struct SpotifyURLParser {
-    // open.spotify.com/track/{id} 形式
-    // spotify.link/{shortId} 形式（短縮URL）
-    // spotify:track:{id} 形式（URI）
-    static func parse(_ url: URL) -> SpotifyURL?
-}
+// 対応するURL形式:
+// - https://open.spotify.com/track/{id}?si=xxx
+// - https://open.spotify.com/intl-ja/track/{id}?si=xxx （ロケールプレフィックス）
+// - https://spotify.link/{shortId} （短縮URL → リダイレクト解決）
+// - spotify:track:{id} （URI形式）
+function parseSpotifyUrl(input: string): SpotifyUrl | null
 ```
 
-対応すべきURL形式:
-- `https://open.spotify.com/track/{id}?si=xxx`
-- `https://open.spotify.com/intl-ja/track/{id}?si=xxx`（ロケールプレフィックス付き）
-- `https://spotify.link/{shortId}`（短縮URL、リダイレクト解決が必要）
-- `spotify:track:{id}`（Spotify URI形式）
+#### 4.3.4 OEmbedレスポンスパーサーの堅牢化
 
-#### 4.3.4 Contract Tests（仕様変更の早期検知）
+oEmbedの `title` フィールド形式が変わっても最低限動く設計。
 
-実際のSpotify APIエンドポイントに対してリクエストを送り、レスポンス構造が期待通りかを検証するテスト。GitHub Actions のスケジュール実行（週次）で定期的に実行する。
-
-```swift
-// ContractTests/SpotifyOEmbedContractTests.swift
-final class SpotifyOEmbedContractTests: XCTestCase {
-    /// oEmbed APIが期待するフィールドを返すことを検証
-    func testOEmbedResponseStructure() async throws {
-        let url = "https://open.spotify.com/oembed?url=https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh"
-        let (data, response) = try await URLSession.shared.data(from: URL(string: url)!)
-        
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
-        
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        XCTAssertNotNil(json["title"] as? String, "title field missing or not a string")
-        XCTAssertNotNil(json["thumbnail_url"] as? String, "thumbnail_url field missing")
-        XCTAssertNotNil(json["provider_name"] as? String, "provider_name field missing")
-    }
-}
+```typescript
+// oEmbedのtitle形式は "曲名 - song and lyrics by アーティスト名 | Spotify" 等
+// 形式が変更されても、最低限rawTitleをそのまま返す（graceful degradation）
+function parseOEmbedTitle(rawTitle: string): { title: string; artist: string | null }
 ```
 
-CI失敗時にGitHub Issueを自動作成し、仕様変更を即座に検知する。
+パース戦略:
+1. 既知のパターン（正規表現）を順に試行
+2. 全パターン失敗 → rawTitle全体をtitleとして返し、artistはnull
+3. artistがnullの場合、フォーマッタはアーティスト名を省略する
 
-#### 4.3.5 レスポンスパースの堅牢化
+#### 4.3.5 Contract Tests（CI週次実行）
 
-oEmbed APIの `title` フィールドの形式が変わっても対応できるよう、パースロジックを段階的に設計する。
+実際のSpotify APIに対して週次でリクエストを送り、レスポンス構造を検証。
 
-```swift
-struct OEmbedTitleParser {
-    /// titleフィールドから曲名とアーティスト名を分離する
-    /// 想定フォーマット: "曲名 - song and lyrics by アーティスト名 | Spotify" など
-    /// フォーマットが変わっても最低限titleそのものは返す
-    static func parse(_ rawTitle: String) -> (title: String, artist: String?) {
-        // 複数のパターンを試行
-        // パターンが全て失敗した場合はrawTitle全体をtitleとして返す（graceful degradation）
+```typescript
+// contract-tests/spotify-oembed.test.ts
+describe("Spotify oEmbed API contract", () => {
+  it("returns expected fields for a track URL", async () => {
+    const res = await fetch(
+      "https://open.spotify.com/oembed?url=https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh"
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty("title");
+    expect(typeof json.title).toBe("string");
+    expect(json.title.length).toBeGreaterThan(0);
+  });
+
+  it("title can be parsed into track name and artist", async () => {
+    const res = await fetch(
+      "https://open.spotify.com/oembed?url=https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh"
+    );
+    const json = await res.json();
+    const parsed = parseOEmbedTitle(json.title);
+    expect(parsed.title.length).toBeGreaterThan(0);
+    // artistがパースできなくてもテスト失敗にはしない（graceful degradation）
+    // ただしwarningログを出す
+    if (parsed.artist === null) {
+      console.warn("WARNING: artist could not be parsed from title:", json.title);
     }
-}
+  });
+});
 ```
 
-### 4.4 Share Extension の実装方針
+CI失敗時にGitHub Issueを自動作成 → 仕様変更を即座に検知。
+
+
+### 4.4 ユーザーフロー詳細
 
 ```
 [Spotifyアプリ]
-    ↓ 共有ボタン
-[iOS共有シート]
-    ↓ TuneCardを選択
-[TuneCard Share Extension]
-    ↓ NSExtensionItem から URL を取得
-    ↓ SpotifyURLParser でパース
-    ↓ FallbackTrackInfoProvider で楽曲情報取得
-    ↓ ShareTextFormatter でテキスト整形
-[Share Extension UI]
-    - 整形テキストのプレビュー表示
-    - コメント入力欄
-    - 「コピー」ボタン
-    - 「Xで投稿」ボタン → twitter://post?message={encoded_text}
-    - 「閉じる」ボタン
+    │ 「…」→ シェア → リンクをコピー
+    ▼
+[TuneCard PWA を開く]（ホーム画面アイコン）
+    │
+    ▼
+[URL入力欄]
+    │ ペースト（または手入力）
+    │ 入力検知 → SpotifyURLParser でバリデーション
+    ▼
+[ローディング表示]
+    │ FallbackTrackInfoProvider → oEmbed API fetch
+    ▼
+[結果表示]
+    ┌──────────────────────────────────┐
+    │  🎵 曲名 / アーティスト名        │
+    │                                  │
+    │  ┌────────────────────────────┐  │
+    │  │ コメント入力欄（任意）       │  │
+    │  └────────────────────────────┘  │
+    │                                  │
+    │  ┌──────────────────────────┐    │
+    │  │ 生成テキストプレビュー     │    │
+    │  │ この曲いい                │    │
+    │  │ 曲名 / Artist #NowPlaying │    │
+    │  │ https://open.spotify...   │    │
+    │  └──────────────────────────┘    │
+    │                                  │
+    │  [📋 コピー]  [𝕏 Xで投稿]       │
+    └──────────────────────────────────┘
 ```
 
 ### 4.5 X（Twitter）への遷移
 
-```swift
-// X公式アプリのURLスキーム
-let tweetText = "曲名 / アーティスト名 #NowPlaying\nhttps://open.spotify.com/track/xxx"
-let encoded = tweetText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-
-// X公式アプリがインストールされている場合
-if let xURL = URL(string: "twitter://post?message=\(encoded)"),
-   UIApplication.shared.canOpenURL(xURL) {
-    UIApplication.shared.open(xURL)
-} else {
-    // WebフォールバックURL
-    let webURL = URL(string: "https://twitter.com/intent/tweet?text=\(encoded)")!
-    UIApplication.shared.open(webURL)
+```typescript
+function openXCompose(text: string): void {
+  const encoded = encodeURIComponent(text);
+  // Twitter Web Intentを使用（モバイル/PCどちらでも動作）
+  window.open(`https://twitter.com/intent/tweet?text=${encoded}`, "_blank");
 }
 ```
 
-注意: Share Extension内では `UIApplication.shared` にアクセスできないため、`extensionContext` 経由で `openURL` を使用する。
+Web Intentはモバイルでも自動的にXアプリが開く（インストール済みの場合）。URLスキーム（`twitter://`）よりも安定。
 
 
 ## 5. ディレクトリ構成
 
 ```
-TuneCard/
+tunecard/
 ├── docs/
-│   ├── PRD.md                    # 本ドキュメント
-│   ├── ARCHITECTURE.md           # 詳細設計（Claude Codeが精緻化）
-│   └── RELEASE_GUIDE.md          # リリース手順
-├── TuneCard/                     # ホストアプリ
-│   ├── App/
-│   │   ├── TuneCardApp.swift
-│   │   └── ContentView.swift     # 使い方説明画面
-│   ├── Views/
-│   ├── ViewModels/
-│   └── Resources/
-│       ├── Assets.xcassets
-│       └── Info.plist
-├── TuneCardShare/                # Share Extension
-│   ├── ShareViewController.swift
-│   ├── ShareView.swift           # SwiftUI View
-│   ├── ShareViewModel.swift
-│   └── Info.plist
-├── TuneCardCore/                 # 共有フレームワーク
-│   ├── Models/
-│   │   ├── TrackInfo.swift
-│   │   └── SpotifyURL.swift
-│   ├── Providers/
-│   │   ├── TrackInfoProvider.swift      # Protocol定義
-│   │   ├── OEmbedProvider.swift
-│   │   ├── HTMLMetaProvider.swift
-│   │   └── FallbackTrackInfoProvider.swift
-│   ├── Parsers/
-│   │   ├── SpotifyURLParser.swift
-│   │   ├── OEmbedTitleParser.swift
-│   │   └── ShareTextFormatter.swift
-│   └── Utilities/
-│       └── Logger.swift
-├── TuneCardTests/                # ユニットテスト
-│   ├── Parsers/
-│   │   ├── SpotifyURLParserTests.swift
-│   │   ├── OEmbedTitleParserTests.swift
-│   │   └── ShareTextFormatterTests.swift
-│   ├── Providers/
-│   │   ├── OEmbedProviderTests.swift
-│   │   └── FallbackProviderTests.swift
-│   └── Mocks/
-│       └── MockTrackInfoProvider.swift
-├── TuneCardContractTests/        # Contract Tests（CI週次実行）
-│   └── SpotifyOEmbedContractTests.swift
+│   └── PRD.md                         # 本ドキュメント
+├── src/
+│   ├── main.tsx                       # エントリーポイント
+│   ├── App.tsx                        # ルートコンポーネント
+│   ├── components/
+│   │   ├── UrlInput.tsx               # URL入力欄
+│   │   ├── ResultCard.tsx             # 結果表示カード
+│   │   ├── CommentInput.tsx           # コメント入力
+│   │   ├── ActionButtons.tsx          # コピー/X投稿ボタン
+│   │   └── ErrorMessage.tsx           # エラー表示
+│   ├── core/
+│   │   ├── types.ts                   # TrackInfo, SpotifyUrl等の型定義
+│   │   ├── spotify-url-parser.ts      # URLパース
+│   │   ├── oembed-title-parser.ts     # oEmbedタイトルパース
+│   │   ├── share-text-formatter.ts    # テキスト整形
+│   │   └── providers/
+│   │       ├── track-info-provider.ts # Provider interface
+│   │       ├── oembed-provider.ts     # oEmbed API実装
+│   │       ├── proxied-oembed-provider.ts  # Worker経由
+│   │       └── fallback-provider.ts   # フォールバックチェーン
+│   ├── hooks/
+│   │   └── useTrackInfo.ts            # React Hook
+│   └── utils/
+│       └── clipboard.ts              # クリップボード操作
+├── tests/
+│   ├── core/
+│   │   ├── spotify-url-parser.test.ts
+│   │   ├── oembed-title-parser.test.ts
+│   │   ├── share-text-formatter.test.ts
+│   │   └── providers/
+│   │       ├── oembed-provider.test.ts
+│   │       └── fallback-provider.test.ts
+│   └── contract/
+│       └── spotify-oembed.contract.test.ts  # 週次CI
+├── worker/                            # Cloudflare Worker（APIプロキシ）
+│   ├── src/
+│   │   └── index.ts
+│   └── wrangler.toml
+├── public/
+│   ├── manifest.json                  # PWA manifest
+│   └── icons/                         # PWA icons
+├── index.html
+├── vite.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── package.json
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                # PR時のビルド・テスト
-│       └── contract-test.yml     # 週次のContract Test
+│       ├── ci.yml                     # PR時のビルド・テスト
+│       ├── deploy.yml                 # main pushでCloudflare Pagesデプロイ
+│       └── contract-test.yml          # 週次Contract Test
 ├── README.md
-├── LICENSE                       # MIT License
+├── LICENSE                            # MIT
 └── .gitignore
 ```
 
@@ -370,73 +402,77 @@ TuneCard/
 ## 6. 開発マイルストーン
 
 ### M0: プロジェクトセットアップ（Day 1）
-- Xcodeプロジェクト作成（Host App + Share Extension + Shared Framework）
-- App Groups設定
-- Git初期化、GitHub リポジトリ作成
-- CI設定（GitHub Actions）
+- Vite + React + TypeScript プロジェクト初期化
+- Tailwind CSS セットアップ
+- Vitest セットアップ
+- ESLint + Prettier 設定
+- Git初期化、GitHubリポジトリ作成・push
+- GitHub Actions CI設定
 
-### M1: コアロジック実装（Day 2-3）
-- SpotifyURLParser の実装 + テスト
-- OEmbedProvider の実装 + テスト
-- OEmbedTitleParser の実装 + テスト
-- ShareTextFormatter の実装 + テスト
-- FallbackTrackInfoProvider の実装 + テスト
+### M1: コアロジック実装 — TDD（Day 2-3）
+テストファーストで以下を実装する。
 
-### M2: Share Extension UI（Day 4-5）
-- Share Extension の基本UI実装（SwiftUI）
-- URL受信 → 楽曲情報取得 → テキスト表示のフロー結合
-- コメント入力欄の実装
-- クリップボードコピー機能
-- X遷移機能
+| モジュール | テスト観点 |
+|-----------|----------|
+| spotify-url-parser | 正常URL各形式、ロケールプレフィックス付き、短縮URL、URI形式、不正URL |
+| oembed-title-parser | 既知のtitle形式からの分離、未知形式のgraceful degradation |
+| share-text-formatter | テンプレート展開、プレースホルダー置換、コメント追加、特殊文字 |
+| oembed-provider | 正常レスポンスのパース、HTTPエラー、タイムアウト（fetchモック） |
+| fallback-provider | 順序通りのフォールバック、全Provider失敗時のエラー |
 
-### M3: ホストアプリ（Day 6）
-- 使い方説明画面（Share Extensionの有効化手順）
-- アプリアイコン・Launch Screen
+### M2: UI実装（Day 4-5）
+- URL入力コンポーネント（ペースト検知、バリデーション）
+- ローディング・エラー表示
+- 結果カード（曲名・アーティスト表示）
+- コメント入力欄
+- テキストプレビュー
+- コピー / X投稿ボタン
+- レスポンシブデザイン（モバイルファースト）
 
-### M4: 仕上げ・テスト（Day 7-8）
-- 実機テスト（Spotify実環境との結合テスト）
-- エラーハンドリングの確認
-- HTMLMetaProvider（フォールバック）の実装
+### M3: PWA化 + 仕上げ（Day 6-7）
+- manifest.json、Service Worker設定
+- アプリアイコン作成
+- 実際のSpotify URLとの結合テスト
 - Contract Tests作成
 - README.md作成
 
-### M5: リリース準備（Day 9-10）
-- TestFlight配布設定
-- App Store提出用メタデータ（スクリーンショット、説明文）
-- App Store審査提出
+### M4: デプロイ（Day 8）
+- Cloudflare Pages デプロイ設定
+- カスタムドメイン設定（任意）
+- GitHub Actions デプロイパイプライン
+- Cloudflare Worker（APIプロキシ）のデプロイ（必要な場合のみ）
 
 
 ## 7. テスト戦略
 
-### ユニットテスト（TDD対象）
+### ユニットテスト（TDD対象、Vitest）
 
-以下のモジュールはテストファーストで開発する。Claude Codeへの指示時に `/goal` でテストクリアを目標に設定する。
+テストファーストで開発。Claude Codeへの指示時に `/goal` でテストクリアを目標に設定。
 
-| モジュール | テスト観点 |
-|-----------|----------|
-| SpotifyURLParser | 各URL形式の正常パース、不正URLの処理、ロケールプレフィックス対応 |
-| OEmbedTitleParser | 各種title形式からの曲名・アーティスト分離、未知形式のgraceful degradation |
-| ShareTextFormatter | テンプレート展開、プレースホルダー置換、特殊文字のエスケープ |
-| OEmbedProvider | 正常レスポンスのパース、HTTPエラー処理、タイムアウト処理 |
-| FallbackTrackInfoProvider | Provider順序通りのフォールバック、全Provider失敗時のエラー |
+```
+/goal "spotify-url-parser.test.ts が全てパスする"
+/goal "oembed-title-parser.test.ts が全てパスする"
+/goal "share-text-formatter.test.ts が全てパスする"
+```
 
 ### Contract Tests（CI週次実行）
 
 | テスト | 目的 |
 |-------|------|
-| oEmbed APIレスポンス構造検証 | titleフィールドの存在・型を確認 |
+| oEmbed APIレスポンス構造検証 | title, thumbnail_url等のフィールド存在・型を確認 |
 | oEmbed title形式検証 | 曲名・アーティスト名が取得可能な形式であることを確認 |
-| Spotify URL形式検証 | 公式Webページの楽曲URLパターンが変わっていないことを確認 |
+| Spotify URL形式検証 | 公式WebページのURL形式が変わっていないことを確認 |
+| CORS対応確認 | oEmbedエンドポイントがCORSヘッダーを返すことを確認 |
 
 ### 手動テスト
 
 | テスト | 確認内容 |
 |-------|---------|
-| Spotifyからの共有シート起動 | Share Extensionが表示されるか |
-| 各種楽曲URL | 日本語タイトル、英語タイトル、複数アーティスト |
-| Xアプリ遷移 | テキストが正しく引き渡されるか |
-| ネットワークオフライン | エラーメッセージ表示 |
-| 大量テキスト | 280文字制限に対する振る舞い |
+| 各種楽曲URL | 日本語タイトル、英語タイトル、複数アーティスト、feat.付き |
+| X投稿遷移 | テキストが正しく引き渡されるか（モバイル/PC） |
+| PWAインストール | ホーム画面追加、アイコン表示、起動 |
+| オフライン | UI表示、APIエラーメッセージ |
+| 各ブラウザ | Safari (iOS), Chrome (Android), Chrome (PC), Firefox |
 
 
 ## 8. Claude Code への指示テンプレート
@@ -446,57 +482,86 @@ TuneCard/
 ```
 docs/PRD.md を読んで、以下の順序で進めてください。
 
-1. PRDを元に docs/ARCHITECTURE.md を作成し、詳細設計を記述する
-2. M0のプロジェクトセットアップを実行する
-3. M1のコアロジックについて、まずテストを書き、テストが通る実装を書く
-   - /goal "SpotifyURLParserTests が全てパスする"
-   - /goal "OEmbedTitleParserTests が全てパスする"
-   - /goal "ShareTextFormatterTests が全てパスする"
+1. M0: プロジェクトセットアップを実行する
+   - Vite + React + TypeScript でプロジェクト初期化
+   - Tailwind CSS, Vitest, ESLint, Prettier をセットアップ
+   - ディレクトリ構成は PRD セクション5 に従う
+
+2. M1: コアロジックをTDDで実装する
+   - まず tests/core/ 以下にテストファイルを作成
+   - /goal "spotify-url-parser.test.ts が全てパスする"
+   - /goal "oembed-title-parser.test.ts が全てパスする"  
+   - /goal "share-text-formatter.test.ts が全てパスする"
+   - /goal "全てのProviderテストがパスする"
+
+3. M2: UI実装
+   - PRD セクション4.4 のユーザーフローに従ってUIを実装
+   - モバイルファーストのレスポンシブデザイン
 ```
 
 ### 仕様変更対応時の指示
 
 ```
 Spotify oEmbed APIのレスポンス形式が変わったようです。
-TuneCardContractTests/ の失敗しているテストを確認し、
-OEmbedTitleParser を修正してテストを通してください。
-他のProviderへの影響も確認してください。
+contract/ のテストを実行して失敗箇所を確認し、
+oembed-title-parser.ts を修正してテストを通してください。
+fallback-provider経由で他のProviderも正常動作することを確認してください。
 ```
 
 
-## 9. iOS App Store リリース手順（概要）
+## 9. デプロイ・公開
 
-1. **Apple Developer Program** に登録する（年額 $99）
-2. **App ID** と **Provisioning Profile** を Apple Developer Console で作成
-3. **Xcode** でArchiveビルドを作成
-4. **TestFlight** にアップロードし、自分のデバイスでベータテスト
-5. **App Store Connect** で以下のメタデータを入力:
-   - アプリ名: TuneCard
-   - カテゴリ: ミュージック / ユーティリティ
-   - スクリーンショット（6.7インチ、6.1インチ）
-   - 説明文・キーワード
-   - プライバシーポリシーURL（GitHub Pages等）
-   - App Review用のデモ手順
-6. **審査提出**（通常1〜3営業日で結果）
-7. 承認後、**リリース**（即時 or 指定日）
+### ホスティング
 
-詳細は別途 `docs/RELEASE_GUIDE.md` に記載する。
+Cloudflare Pages（無料枠）を使用。
+
+- mainブランチへのpushで自動デプロイ
+- プレビューURL（PRごとに自動生成）
+- カスタムドメイン設定可能
+
+### Cloudflare Worker（APIプロキシ）
+
+oEmbed APIのCORSが壊れた場合のみ使用するサーバーレスプロキシ。
+
+```typescript
+// worker/src/index.ts
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const spotifyUrl = url.searchParams.get("url");
+    if (!spotifyUrl) return new Response("Missing url param", { status: 400 });
+
+    const oembedRes = await fetch(
+      `https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`
+    );
+    const data = await oembedRes.text();
+
+    return new Response(data, {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  },
+};
+```
 
 
 ## 10. リスクと対策
 
 | リスク | 影響 | 対策 |
 |-------|------|------|
-| Spotify oEmbed APIの廃止・変更 | 楽曲情報が取得できなくなる | フォールバックチェーン（HTMLMeta）+ Contract Testsで早期検知 |
-| oEmbedのtitle形式変更 | パース失敗 | graceful degradation: パース失敗時はrawTitleをそのまま使用 |
-| Spotify共有シートの変更 | URL形式が変わる | SpotifyURLParserを分離、テストで複数形式をカバー |
-| XのURLスキーム変更 | X遷移が動かなくなる | WebフォールバックURL（intent/tweet）を常に用意 |
-| App Store審査リジェクト | リリース遅延 | 最低限の機能でシンプルに保つ、審査ガイドライン事前確認 |
-| Share Extension のメモリ制限 | クラッシュ | ネットワーク呼び出しを軽量に、画像処理なし |
+| Spotify oEmbed APIの廃止・変更 | 楽曲情報が取得できなくなる | フォールバックチェーン + Contract Testsで早期検知 |
+| oEmbed CORS対応の撤回 | ブラウザ直接fetchが失敗 | Cloudflare Workerプロキシへ自動切り替え |
+| oEmbedのtitle形式変更 | パース失敗 | graceful degradation: パース失敗時はrawTitle使用 |
+| Spotify共有リンク形式の変更 | URLパース失敗 | SpotifyURLParserを分離、テストで複数形式カバー |
+| X Web Intentの変更 | X遷移が動かなくなる | 標準的なintent URLを使用、クリップボードコピーは常に動作 |
+| Cloudflare Pages/Workers停止 | サービスダウン | 静的サイトなので別ホスティングへの移行が容易 |
 
 
 ## 変更履歴
 
 | 日付 | バージョン | 変更内容 |
 |------|----------|---------|
-| 2026-06-25 | v1.0 | 初版作成 |
+| 2026-06-25 | v1.0 | 初版作成（iOS Share Extension版） |
+| 2026-06-25 | v2.0 | Webアプリ + PWA版に全面改訂。Mac不要の開発フローに変更 |
