@@ -110,6 +110,24 @@ cd worker && npx wrangler deploy
 | `deploy.yml` | push to main | フロント: build → Pages デプロイ / Worker: wrangler deploy（並列） |
 | `contract-test.yml` | 毎週月曜 9:00 UTC | Spotify API 仕様変更検知（失敗時 Issue 自動作成） |
 
+### Cloudflare FAQ
+
+**Q: Pages と Workers の違いは？**
+
+Pages はフロントエンド（HTML/CSS/JS の配信）、Workers はバックエンド（API サーバー）。Pages が画面を表示し、Workers が Spotify API への問い合わせを処理する。
+
+**Q: 無料で使い続けられる？**
+
+Free プランに期間制限はない。上限は Pages が帯域無制限・500ビルド/月、Workers が10万リクエスト/日。個人利用なら実質無料。上限を超えても自動課金されず、リクエストがエラーになるだけ。Workers 有料プラン（$5/月）で月1,000万リクエストまで拡張可能。
+
+**Q: Push したら自動で公開される？**
+
+main ブランチへの push（またはPRマージ）で GitHub Actions が起動し、約1分で Pages と Workers が同時に更新される。
+
+**Q: サービスを停止・廃止したいときは？**
+
+Cloudflare ダッシュボード → Workers & Pages から `tunecard`（Pages）と `tunecard-api`（Workers）を Delete する。ソースコードや Spotify credentials には影響しない。再開したければ再デプロイするだけ。
+
 ## アーキテクチャ
 
 詳細は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照。
