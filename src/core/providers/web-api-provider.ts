@@ -1,4 +1,4 @@
-import type { SpotifyUrl, TrackInfo, TrackInfoProvider } from '../types.ts';
+import type { SpotifyContentType, SpotifyUrl, TrackInfo, TrackInfoProvider } from '../types.ts';
 
 interface WorkerTrackResponse {
   title: string;
@@ -16,12 +16,26 @@ export class WebApiProvider implements TrackInfoProvider {
     this.workerUrl = workerUrl;
   }
 
+  private getEndpoint(contentType: SpotifyContentType): string {
+    switch (contentType) {
+      case 'track':
+        return 'track';
+      case 'album':
+        return 'album';
+      case 'playlist':
+        return 'playlist';
+      default:
+        throw new Error(`Unsupported content type: ${contentType}`);
+    }
+  }
+
   async fetchTrackInfo(url: SpotifyUrl): Promise<TrackInfo> {
     if (!this.workerUrl) {
       throw new Error('Worker URL is not configured');
     }
 
-    const requestUrl = `${this.workerUrl}/track?id=${url.spotifyId}`;
+    const endpoint = this.getEndpoint(url.contentType);
+    const requestUrl = `${this.workerUrl}/${endpoint}?id=${url.spotifyId}`;
 
     const response = await fetch(requestUrl, {
       signal: AbortSignal.timeout(TIMEOUT_MS),

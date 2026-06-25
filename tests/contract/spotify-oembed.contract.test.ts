@@ -31,4 +31,34 @@ describe('Spotify oEmbed API contract', () => {
       console.warn('WARNING: artist could not be parsed from oEmbed title:', json.title);
     }
   });
+
+  it('returns 200 and expected fields for a known album URL', async () => {
+    const url =
+      'https://open.spotify.com/oembed?url=https://open.spotify.com/album/2noRn2Aes5aoNVsU6iWThc';
+    const res = await fetch(url);
+
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json).toHaveProperty('title');
+    expect(typeof json.title).toBe('string');
+    expect(json.title.length).toBeGreaterThan(0);
+    expect(json).toHaveProperty('thumbnail_url');
+    expect(json.provider_name).toBe('Spotify');
+  });
+
+  it('returns 200 and expected fields for a known playlist URL', async () => {
+    const url =
+      'https://open.spotify.com/oembed?url=https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
+    const res = await fetch(url);
+
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json).toHaveProperty('title');
+    expect(typeof json.title).toBe('string');
+    expect(json.title.length).toBeGreaterThan(0);
+    expect(json).toHaveProperty('thumbnail_url');
+    expect(json.provider_name).toBe('Spotify');
+  });
 });

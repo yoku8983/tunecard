@@ -16,9 +16,21 @@ interface SpotifyTrackResponse {
   };
 }
 
+interface SpotifyAlbumResponse {
+  name: string;
+  artists: { name: string }[];
+  images: { url: string; width: number; height: number }[];
+}
+
+interface SpotifyPlaylistResponse {
+  name: string;
+  owner: { display_name: string | null };
+  images: { url: string; width: number; height: number }[];
+}
+
 interface TrackResponse {
   title: string;
-  artist: string;
+  artist: string | null;
   thumbnailUrl: string | null;
 }
 
@@ -67,6 +79,16 @@ async function getAccessToken(env: Env): Promise<string> {
   return data.access_token;
 }
 
+function selectLargestImage(
+  images: { url: string; width: number; height: number }[],
+): string | null {
+  const best = images.reduce<{ url: string; width: number } | null>(
+    (acc, img) => (!acc || img.width > acc.width ? img : acc),
+    null,
+  );
+  return best?.url ?? null;
+}
+
 async function fetchTrack(trackId: string, env: Env): Promise<TrackResponse> {
   const token = await getAccessToken(env);
 
@@ -79,15 +101,51 @@ async function fetchTrack(trackId: string, env: Env): Promise<TrackResponse> {
   }
 
   const track = (await response.json()) as SpotifyTrackResponse;
-  const largestImage = track.album.images.reduce<{ url: string; width: number } | null>(
-    (best, img) => (!best || img.width > best.width ? img : best),
-    null,
-  );
 
   return {
     title: track.name,
     artist: track.artists.map((a) => a.name).join(', '),
-    thumbnailUrl: largestImage?.url ?? null,
+    thumbnailUrl: selectLargestImage(track.album.images),
+  };
+}
+
+async function fetchAlbum(albumId: string, env: Env): Promise<TrackResponse> {
+  const token = await getAccessToken(env);
+
+  const response = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Spotify API returned ${response.status}`);
+  }
+
+  const album = (await response.json()) as SpotifyAlbumResponse;
+
+  return {
+    title: album.name,
+    artist: album.artists.map((a) => a.name).join(', '),
+    thumbnailUrl: selectLargestImage(album.images),
+  };
+}
+
+async function fetchPlaylist(playlistId: string, env: Env): Promise<TrackResponse> {
+  const token = await getAccessToken(env);
+
+  const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Spotify API returned ${response.status}`);
+  }
+
+  const playlist = (await response.json()) as SpotifyPlaylistResponse;
+
+  return {
+    title: playlist.name,
+    artist: playlist.owner.display_name ?? null,
+    thumbnailUrl: selectLargestImage(playlist.images),
   };
 }
 
@@ -102,18 +160,29 @@ export default {
     }
 
     const url = new URL(request.url);
+    const id = url.searchParams.get('id');
 
-    if (url.pathname !== '/track') {
-      return jsonResponse({ error: 'Not found' }, 404);
-    }
-
-    const trackId = url.searchParams.get('id');
-    if (!trackId) {
+    if (!id) {
       return jsonResponse({ error: 'Missing id parameter' }, 400);
     }
 
     try {
-      const result = await fetchTrack(trackId, env);
+      let result: TrackResponse;
+
+      switch (url.pathname) {
+        case '/track':
+          result = await fetchTrack(id, env);
+          break;
+        case '/album':
+          result = await fetchAlbum(id, env);
+          break;
+        case '/playlist':
+          result = await fetchPlaylist(id, env);
+          break;
+        default:
+          return jsonResponse({ error: 'Not found' }, 404);
+      }
+
       return jsonResponse(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal error';
