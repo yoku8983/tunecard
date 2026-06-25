@@ -57,12 +57,48 @@ npm run format        # Prettier
 - vite-plugin-pwa
 - Cloudflare Pages（ホスティング）
 
+## デプロイ
+
+Cloudflare Pagesで自動デプロイ。mainブランチへのpushでCI → ビルド → デプロイが実行される。
+
+### 必要なGitHub Secrets
+
+| Secret | 用途 |
+|--------|------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare APIトークン（Pages編集権限） |
+| `CLOUDFLARE_ACCOUNT_ID` | CloudflareアカウントID |
+
+### 手動デプロイ
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name=tunecard
+```
+
+### CI/CDパイプライン
+
+- `.github/workflows/ci.yml` — PR/push時: lint → typecheck → test → build
+- `.github/workflows/deploy.yml` — main push時: build → Cloudflare Pages デプロイ
+- `.github/workflows/contract-test.yml` — 毎週月曜 9:00 UTC: Spotify API仕様変更検知
+
 ## アーキテクチャ
 
 詳細は [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照。
 
 - **Provider抽象化パターン**: Spotify APIの仕様変更に対するフォールバックチェーン
 - **Contract Tests**: 週次CIでSpotify APIの変更を早期検知
+- **設計判断記録**: [docs/adr/](docs/adr/) にADR（Architecture Decision Records）として記録
+
+## ドキュメント
+
+| ドキュメント | 内容 |
+|------------|------|
+| [docs/PRD.md](docs/PRD.md) | プロダクト要件定義 |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 技術アーキテクチャ |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 開発ロードマップ |
+| [docs/adr/](docs/adr/) | 設計判断記録（ADR） |
+| [CHANGELOG.md](CHANGELOG.md) | 変更履歴 |
+| [SECURITY.md](SECURITY.md) | セキュリティポリシー |
 
 ## ライセンス
 
