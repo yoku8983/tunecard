@@ -102,3 +102,46 @@ Spotify oEmbed API (`https://open.spotify.com/oembed?url={url}`) のレスポン
 - Album: `"Discovery - Album by Daft Punk | Spotify"`
 
 v1.1 より `WebApiProvider` を導入し、Cloudflare Worker 経由で Spotify Web API (Client Credentials Flow) を呼び出すことでアーティスト名を取得。Worker 未設定時は oEmbed にフォールバックし、`artist` は `null` となる。
+
+## 7. インフラ構成
+
+### デプロイ構成
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   GitHub Actions                     │
+│  main push → deploy-frontend ──→ Cloudflare Pages    │
+│            → deploy-worker   ──→ Cloudflare Workers   │
+└─────────────────────────────────────────────────────┘
+
+┌──────────────┐       HTTPS        ┌────────────────────┐
+│   ブラウザ    │ ────────────────→  │  Cloudflare Pages   │
+│  (PWA/SPA)   │                    │  tunecard.pages.dev │
+└──────┬───────┘                    └────────────────────┘
+       │
+       │  fetch /track?id=xxx
+       ▼
+┌────────────────────┐  Client Credentials  ┌──────────────────┐
+│ Cloudflare Workers  │ ──────────────────→  │    Spotify API    │
+│ tunecard-api.       │                      │  api.spotify.com  │
+│   workers.dev       │ ←──────────────────  │                  │
+└────────────────────┘   TrackInfo JSON      └──────────────────┘
+```
+
+### CI/CD パイプライン
+
+| ワークフロー | トリガー | 内容 |
+|------------|---------|------|
+| `ci.yml` | push / PR to main | フロント: lint → typecheck → test → build / Worker: typecheck |
+| `deploy.yml` | push to main | フロント: build → Pages デプロイ / Worker: wrangler deploy（並列） |
+| `contract-test.yml` | 毎週月曜 9:00 UTC | Spotify API 仕様変更検知 |
+
+### 環境変数・シークレット
+
+| 変数 | 管理場所 | 用途 |
+|------|---------|------|
+| `VITE_WORKER_URL` | GitHub Variables (`WORKER_URL`) → ビルド時注入 | フロントからWorkerへの接続先 |
+| `SPOTIFY_CLIENT_ID` | Wrangler Secrets | Spotify Web API 認証 |
+| `SPOTIFY_CLIENT_SECRET` | Wrangler Secrets | Spotify Web API 認証 |
+| `CLOUDFLARE_API_TOKEN` | GitHub Secrets | CI/CD デプロイ用 |
+| `CLOUDFLARE_ACCOUNT_ID` | GitHub Secrets | CI/CD デプロイ用 |
