@@ -1,0 +1,7 @@
+name = "tunecard-api"
+main = "src/index.ts"
+compatibility_date = "2025-06-20"
+
+# Secrets (set via `npx wrangler secret put`):
+#   SPOTIFY_CLIENT_ID
+#   SPOTIFY_CLIENT_SECRET

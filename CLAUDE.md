@@ -52,12 +52,13 @@ src/hooks/         — カスタムhooks (useTrackInfo)
 src/utils/         — ユーティリティ (clipboard)
 tests/core/        — ユニットテスト
 tests/contract/    — Contract Tests（CI週次、通常テストから除外）
+worker/            — Cloudflare Worker（Spotify Web APIプロキシ）
 docs/              — PRD, ARCHITECTURE, ADR
 ```
 
 ## 重要な注意
 
-- Spotify oEmbed API の `title` は曲名のみ（アーティスト名なし）。Issue #2 で Spotify Web API 対応予定
+- Spotify Web API (Worker経由) でアーティスト名取得。Worker未設定時はoEmbedにフォールバック（artist=null）
 - テスト設定は `vitest.config.ts` に書く（`vite.config.ts` の `test` プロパティはVitest 4で非対応）
 - `baseUrl` は TypeScript 6 で非推奨。パスエイリアスは vite.config.ts の `resolve.alias` で設定
 
