@@ -2,7 +2,9 @@
 
 ## Reporting Vulnerabilities
 
-セキュリティに関する問題を見つけた場合は、GitHub Issues ではなく kubo500t@gmail.com まで直接ご連絡ください。
+セキュリティに関する問題を見つけた場合は、GitHub Issues ではなく [Private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability) を使用してください。
+
+リポジトリの「Security」タブ → 「Report a vulnerability」から非公開で報告できます。
 
 ## セキュリティ上の考慮事項
 
