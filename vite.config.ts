@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'TuneCard',
         short_name: 'TuneCard',
-        description: 'Generate share text from Spotify URLs',
+        description: '曲名付きで、Spotifyをシェア',
         theme_color: '#1DB954',
         background_color: '#111827',
         display: 'standalone',
