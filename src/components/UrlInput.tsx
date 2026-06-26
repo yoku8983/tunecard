@@ -1,4 +1,5 @@
 import { useState, useCallback, type ClipboardEvent, type FormEvent } from 'react';
+import { Search } from 'lucide-react';
 
 interface UrlInputProps {
   onSubmit: (url: string) => void;
@@ -37,14 +38,15 @@ export function UrlInput({ onSubmit, isLoading }: UrlInputProps) {
         onPaste={handlePaste}
         placeholder="Spotify URLをペースト..."
         disabled={isLoading}
-        className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-base placeholder-gray-400 outline-none transition-colors focus:border-[#1DB954] dark:border-gray-600 dark:bg-gray-800 dark:placeholder-gray-500"
+        className="flex-1 rounded-xl border border-gray-300/50 bg-white/80 px-4 py-3 text-base placeholder-gray-400 outline-none backdrop-blur-sm transition-all duration-200 focus:border-spotify focus:ring-2 focus:ring-spotify/50 dark:border-white/10 dark:bg-white/5 dark:placeholder-gray-500"
       />
       <button
         type="submit"
         disabled={isLoading || !value.trim()}
-        className="rounded-lg bg-[#1DB954] px-4 py-3 font-medium text-white transition-opacity disabled:opacity-50"
+        aria-label="取得"
+        className="rounded-full bg-spotify px-4 py-3 font-medium text-white transition-all duration-200 hover:bg-spotify-dark hover:shadow-[0_0_20px_rgba(29,185,84,0.4)] active:scale-95 disabled:opacity-50 disabled:hover:shadow-none"
       >
-        取得
+        <Search size={20} />
       </button>
     </form>
   );

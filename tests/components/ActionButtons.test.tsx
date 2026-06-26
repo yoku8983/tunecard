@@ -51,16 +51,16 @@ describe('ActionButtons', () => {
     disableWebShareApi();
     render(<ActionButtons shareText={shareText} />);
 
-    expect(screen.getByText('𝕏 で投稿')).toBeInTheDocument();
-    expect(screen.getByText('🦋 Bluesky')).toBeInTheDocument();
-    expect(screen.getByText('📋 投稿文をコピー')).toBeInTheDocument();
+    expect(screen.getByText(/𝕏 で投稿/)).toBeInTheDocument();
+    expect(screen.getByText(/Bluesky/)).toBeInTheDocument();
+    expect(screen.getByText(/投稿文をコピー/)).toBeInTheDocument();
   });
 
   it('thumbnailUrl未指定時は画像付き共有ボタンが非表示', () => {
     enableWebShareApi();
     render(<ActionButtons shareText={shareText} />);
 
-    expect(screen.queryByText('🖼 画像付きで共有')).not.toBeInTheDocument();
+    expect(screen.queryByText(/画像付きで共有/)).not.toBeInTheDocument();
   });
 
   it('コピーボタンでクリップボードにコピーされる', async () => {
@@ -68,10 +68,10 @@ describe('ActionButtons', () => {
     const user = userEvent.setup();
     render(<ActionButtons shareText={shareText} />);
 
-    await user.click(screen.getByText('📋 投稿文をコピー'));
+    await user.click(screen.getByText(/投稿文をコピー/));
 
     expect(copyToClipboard).toHaveBeenCalledWith(shareText);
-    expect(screen.getByText('✓ コピー済み')).toBeInTheDocument();
+    expect(screen.getByText(/コピーしました/)).toBeInTheDocument();
   });
 
   it('XボタンでTwitter intent URLが開く', async () => {
@@ -92,7 +92,7 @@ describe('ActionButtons', () => {
     const user = userEvent.setup();
     render(<ActionButtons shareText={shareText} />);
 
-    await user.click(screen.getByText('🦋 Bluesky'));
+    await user.click(screen.getByText(/Bluesky/));
 
     expect(openMock).toHaveBeenCalledWith(
       `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`,

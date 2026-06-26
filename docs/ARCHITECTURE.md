@@ -116,7 +116,35 @@ Spotify oEmbed API (`https://open.spotify.com/oembed?url={url}`) のレスポン
 
 v1.1 より `WebApiProvider` を導入し、Cloudflare Worker 経由で Spotify Web API (Client Credentials Flow) を呼び出すことでアーティスト名を取得。Worker 未設定時は oEmbed にフォールバックし、`artist` は `null` となる。
 
-## 7. インフラ構成
+## 7. デザインシステム — Spotify Midnight
+
+> ADR-0006 参照
+
+### カラーパレット
+
+| 用途 | ライトモード | ダークモード |
+|---|---|---|
+| 背景 | `gray-50` | `gray-950` |
+| カード | `bg-white/80 backdrop-blur-xl` | `bg-white/5 backdrop-blur-xl` |
+| ボーダー | `border-gray-200/50` | `border-white/10` |
+| テキスト（主） | `gray-900` | `white` |
+| テキスト（副） | `gray-500` | `white/60` |
+| アクセント | `#1DB954`（spotify） | `#1DB954`（spotify） |
+
+### コンポーネントスタイル規則
+
+- **カード**: `rounded-2xl` + グラスモーフィズム + `shadow-lg` / `shadow-[0_8px_32px_rgba(0,0,0,0.3)]`
+- **入力フィールド**: `rounded-xl` + `focus:ring-2 focus:ring-spotify/50 focus:border-spotify`
+- **ボタン**: `rounded-full` + `active:scale-95` + `transition-all duration-200`
+- **アイコン**: Lucide React（`size={16}`〜`size={20}`）
+
+### アニメーション
+
+- **カード出現**: `animate-slide-up`（slideUp 0.4s ease-out）
+- **ローディング**: スケルトンUI（`animate-pulse`）
+- **背景装飾**: グラデーションブロブ（Spotifyグリーンの半透明円 + `blur-3xl`）
+
+## 8. インフラ構成
 
 ### デプロイ構成
 

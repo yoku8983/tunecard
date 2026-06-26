@@ -20,7 +20,8 @@ npm run format       # Prettier
 ## 技術スタック
 
 - TypeScript 6 + React 19 + Vite 8
-- Tailwind CSS v4（CSS-first、tailwind.config不要）
+- Tailwind CSS v4（CSS-first、tailwind.config不要、カスタムテーマは `@theme` ディレクティブで定義）
+- Lucide React（アイコン、tree-shakeable）
 - Vitest 4（vitest.config.ts は vite.config.ts と分離必須）
 - ESLint 9（flat config、eslint.config.ts）
 - vite-plugin-pwa（autoUpdate、manifest inline）
