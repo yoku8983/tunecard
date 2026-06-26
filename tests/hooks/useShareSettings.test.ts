@@ -22,6 +22,7 @@ describe('useShareSettings', () => {
     expect(result.current.settings).toEqual({
       includeNowPlaying: false,
       customHashtag: '#test',
+      attachImage: true,
     });
   });
 
@@ -65,6 +66,7 @@ describe('useShareSettings', () => {
     expect(result.current.settings).toEqual({
       includeNowPlaying: false,
       customHashtag: '',
+      attachImage: true,
     });
   });
 });

@@ -149,6 +149,35 @@ async function fetchPlaylist(playlistId: string, env: Env): Promise<TrackRespons
   };
 }
 
+const IMAGE_HOST_ALLOWLIST = ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-ak.spotifycdn.com'];
+
+async function proxyImage(imageUrl: string): Promise<Response> {
+  let parsed: URL;
+  try {
+    parsed = new URL(imageUrl);
+  } catch {
+    return jsonResponse({ error: 'Invalid url parameter' }, 400);
+  }
+
+  if (!IMAGE_HOST_ALLOWLIST.includes(parsed.hostname)) {
+    return jsonResponse({ error: 'Host not allowed' }, 403);
+  }
+
+  const upstream = await fetch(imageUrl);
+  if (!upstream.ok) {
+    return jsonResponse({ error: `Upstream returned ${upstream.status}` }, 502);
+  }
+
+  const headers = new Headers(CORS_HEADERS);
+  const contentType = upstream.headers.get('Content-Type');
+  if (contentType) {
+    headers.set('Content-Type', contentType);
+  }
+  headers.set('Cache-Control', 'public, max-age=86400');
+
+  return new Response(upstream.body, { status: 200, headers });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -160,6 +189,15 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    if (url.pathname === '/image') {
+      const imageUrl = url.searchParams.get('url');
+      if (!imageUrl) {
+        return jsonResponse({ error: 'Missing url parameter' }, 400);
+      }
+      return proxyImage(imageUrl);
+    }
+
     const id = url.searchParams.get('id');
 
     if (!id) {

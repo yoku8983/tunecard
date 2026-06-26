@@ -38,7 +38,11 @@ export function ResultCard({
         <p className="mt-1 break-all whitespace-pre-wrap text-sm">{shareText}</p>
       </div>
 
-      <ActionButtons shareText={shareText} />
+      <ActionButtons
+        shareText={shareText}
+        attachImage={settings.attachImage}
+        thumbnailUrl={trackInfo.thumbnailUrl}
+      />
     </div>
   );
 }

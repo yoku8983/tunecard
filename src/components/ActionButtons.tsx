@@ -1,12 +1,33 @@
 import { useState, useCallback } from 'react';
 import { copyToClipboard } from '../utils/clipboard.ts';
+import { canShareFiles } from '../utils/canShareFiles.ts';
 
 interface ActionButtonsProps {
   shareText: string;
+  attachImage: boolean;
+  thumbnailUrl?: string;
 }
 
-export function ActionButtons({ shareText }: ActionButtonsProps) {
+const WORKER_URL = import.meta.env.VITE_WORKER_URL as string | undefined;
+
+async function fetchImageFile(thumbnailUrl: string): Promise<File | null> {
+  if (!WORKER_URL) return null;
+  try {
+    const proxyUrl = `${WORKER_URL}/image?url=${encodeURIComponent(thumbnailUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new File([blob], 'cover.jpg', { type: blob.type || 'image/jpeg' });
+  } catch {
+    return null;
+  }
+}
+
+export function ActionButtons({ shareText, attachImage, thumbnailUrl }: ActionButtonsProps) {
   const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const fileShareSupported = canShareFiles();
+  const shouldShareWithImage = attachImage && fileShareSupported && !!thumbnailUrl;
 
   const handleCopy = useCallback(async () => {
     const success = await copyToClipboard(shareText);
@@ -27,12 +48,29 @@ export function ActionButtons({ shareText }: ActionButtonsProps) {
   }, [shareText]);
 
   const handleShare = useCallback(async () => {
+    if (!shouldShareWithImage) {
+      try {
+        await navigator.share({ text: shareText });
+      } catch {
+        // ユーザーキャンセル (AbortError) は無視
+      }
+      return;
+    }
+
+    setSharing(true);
     try {
-      await navigator.share({ text: shareText });
+      const file = await fetchImageFile(thumbnailUrl!);
+      if (file && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ text: shareText, files: [file] });
+      } else {
+        await navigator.share({ text: shareText });
+      }
     } catch {
       // ユーザーキャンセル (AbortError) は無視
+    } finally {
+      setSharing(false);
     }
-  }, [shareText]);
+  }, [shareText, shouldShareWithImage, thumbnailUrl]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -62,9 +100,10 @@ export function ActionButtons({ shareText }: ActionButtonsProps) {
           <button
             type="button"
             onClick={handleShare}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+            disabled={sharing}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
           >
-            ↗ 共有
+            {sharing ? '準備中…' : shouldShareWithImage ? '🖼 画像付き共有' : '↗ 共有'}
           </button>
         )}
       </div>

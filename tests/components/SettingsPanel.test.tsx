@@ -37,7 +37,7 @@ describe('SettingsPanel', () => {
     const onChange = vi.fn();
     render(
       <SettingsPanel
-        settings={{ includeNowPlaying: false, customHashtag: '' }}
+        settings={{ includeNowPlaying: false, customHashtag: '', attachImage: true }}
         onSettingsChange={onChange}
       />,
     );
@@ -62,7 +62,7 @@ describe('SettingsPanel', () => {
   it('settings の値がフォームに反映される', () => {
     render(
       <SettingsPanel
-        settings={{ includeNowPlaying: false, customHashtag: '#tag' }}
+        settings={{ includeNowPlaying: false, customHashtag: '#tag', attachImage: true }}
         onSettingsChange={() => {}}
       />,
     );
