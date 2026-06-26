@@ -4,7 +4,6 @@ import { canShareFiles } from '../utils/canShareFiles.ts';
 
 interface ActionButtonsProps {
   shareText: string;
-  attachImage: boolean;
   thumbnailUrl?: string;
 }
 
@@ -23,11 +22,11 @@ async function fetchImageFile(thumbnailUrl: string): Promise<File | null> {
   }
 }
 
-export function ActionButtons({ shareText, attachImage, thumbnailUrl }: ActionButtonsProps) {
+export function ActionButtons({ shareText, thumbnailUrl }: ActionButtonsProps) {
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const fileShareSupported = canShareFiles();
-  const shouldShareWithImage = attachImage && fileShareSupported && !!thumbnailUrl;
+  const canShareWithImage = fileShareSupported && !!thumbnailUrl;
 
   const handleCopy = useCallback(async () => {
     const success = await copyToClipboard(shareText);
@@ -47,19 +46,11 @@ export function ActionButtons({ shareText, attachImage, thumbnailUrl }: ActionBu
     window.open(`https://bsky.app/intent/compose?text=${encoded}`, '_blank');
   }, [shareText]);
 
-  const handleShare = useCallback(async () => {
-    if (!shouldShareWithImage) {
-      try {
-        await navigator.share({ text: shareText });
-      } catch {
-        // ユーザーキャンセル (AbortError) は無視
-      }
-      return;
-    }
-
+  const handleShareWithImage = useCallback(async () => {
+    if (!thumbnailUrl) return;
     setSharing(true);
     try {
-      const file = await fetchImageFile(thumbnailUrl!);
+      const file = await fetchImageFile(thumbnailUrl);
       if (file && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ text: shareText, files: [file] });
       } else {
@@ -70,43 +61,43 @@ export function ActionButtons({ shareText, attachImage, thumbnailUrl }: ActionBu
     } finally {
       setSharing(false);
     }
-  }, [shareText, shouldShareWithImage, thumbnailUrl]);
+  }, [shareText, thumbnailUrl]);
 
   return (
     <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-      >
-        {copied ? '✓ コピー済み' : '📋 コピー'}
-      </button>
+      {canShareWithImage && (
+        <button
+          type="button"
+          onClick={handleShareWithImage}
+          disabled={sharing}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1DB954] px-4 py-3 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50 sm:border sm:border-gray-300 sm:bg-white sm:text-gray-900 sm:hover:bg-gray-50 sm:hover:opacity-100 dark:sm:border-gray-600 dark:sm:bg-gray-800 dark:sm:text-gray-100 dark:sm:hover:bg-gray-700"
+        >
+          {sharing ? '準備中…' : '🖼 画像付きで共有'}
+        </button>
+      )}
       <div className="flex gap-3">
         <button
           type="button"
           onClick={handlePostToX}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-black px-4 py-3 font-medium text-white transition-opacity hover:opacity-80"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 sm:border-0 sm:bg-black sm:text-white sm:hover:bg-black sm:hover:opacity-80 dark:sm:bg-black dark:sm:hover:bg-black"
         >
           𝕏 で投稿
         </button>
         <button
           type="button"
           onClick={handlePostToBluesky}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#0085FF] px-4 py-3 font-medium text-white transition-opacity hover:opacity-80"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 sm:border-0 sm:bg-[#0085FF] sm:text-white sm:hover:bg-[#0085FF] sm:hover:opacity-80 dark:sm:bg-[#0085FF] dark:sm:hover:bg-[#0085FF]"
         >
           🦋 Bluesky
         </button>
-        {'share' in navigator && (
-          <button
-            type="button"
-            onClick={handleShare}
-            disabled={sharing}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
-          >
-            {sharing ? '準備中…' : shouldShareWithImage ? '🖼 画像付き共有' : '↗ 共有'}
-          </button>
-        )}
       </div>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+      >
+        {copied ? '✓ コピー済み' : '📋 投稿文をコピー'}
+      </button>
     </div>
   );
 }

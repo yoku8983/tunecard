@@ -49,12 +49,18 @@ src/core/          — ビジネスロジック（types, parsers, formatter）
 src/core/providers/ — TrackInfoProvider実装（oEmbed, fallback）
 src/components/    — Reactコンポーネント
 src/hooks/         — カスタムhooks (useTrackInfo)
-src/utils/         — ユーティリティ (clipboard)
+src/utils/         — ユーティリティ (clipboard, canShareFiles)
 tests/core/        — ユニットテスト
 tests/contract/    — Contract Tests（CI週次、通常テストから除外）
 worker/            — Cloudflare Worker（Spotify Web APIプロキシ）
 docs/              — PRD, ARCHITECTURE, ADR
 ```
+
+## ドキュメント更新ルール
+
+- 機能追加・設計変更時は ARCHITECTURE.md / ADR / CLAUDE.md を同時に更新する
+- 型定義の変更は ARCHITECTURE.md の型定義セクションにも反映する
+- 設計判断（なぜその方式を選んだか）は ADR に記録する
 
 ## 重要な注意
 
