@@ -18,10 +18,6 @@ function loadSettings(): ShareSettings {
         typeof parsed.customHashtag === 'string'
           ? parsed.customHashtag
           : DEFAULT_SHARE_SETTINGS.customHashtag,
-      attachImage:
-        typeof parsed.attachImage === 'boolean'
-          ? parsed.attachImage
-          : DEFAULT_SHARE_SETTINGS.attachImage,
     };
   } catch {
     return DEFAULT_SHARE_SETTINGS;

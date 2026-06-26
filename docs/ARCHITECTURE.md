@@ -22,7 +22,13 @@ FallbackTrackInfoProvider.fetchTrackInfo(spotifyUrl)
 formatShareText(trackInfo, template, comment?)
   │
   ▼ string
-UI表示: プレビュー → コピー or X投稿
+UI表示: プレビュー → シェア
+  │
+  ├─ 「🖼 画像付きで共有」(canShareFiles対応環境のみ)
+  │     Worker /image → Blob → File → navigator.share({ files, text })
+  ├─ 「𝕏 で投稿」→ X Web Intent (テキストのみ)
+  ├─ 「🦋 Bluesky」→ Bluesky Intent (テキストのみ)
+  └─ 「📋 投稿文をコピー」→ clipboard
 ```
 
 ## 2. 型定義
@@ -51,6 +57,12 @@ interface TrackInfoProvider {
   fetchTrackInfo(url: SpotifyUrl): Promise<TrackInfo>;
 }
 
+// --- シェア設定 ---
+interface ShareSettings {
+  readonly includeNowPlaying: boolean;
+  readonly customHashtag: string;
+}
+
 // --- oEmbed APIレスポンス ---
 interface OEmbedResponse {
   title: string;           // 曲名のみ（アーティスト名を含まない）
@@ -75,6 +87,7 @@ interface OEmbedResponse {
 | `web-api-provider` | `WebApiProvider.fetchTrackInfo(url)` | SpotifyUrl | `Promise<TrackInfo>` | Error throw |
 | `oembed-provider` | `OEmbedProvider.fetchTrackInfo(url)` | SpotifyUrl | `Promise<TrackInfo>` | Error throw |
 | `fallback-provider` | `FallbackTrackInfoProvider.fetchTrackInfo(url)` | SpotifyUrl | `Promise<TrackInfo>` | 最後のエラーをthrow |
+| `canShareFiles` | `canShareFiles()` | なし | `boolean` | — |
 
 ## 4. エラーハンドリング戦略
 
@@ -120,12 +133,17 @@ v1.1 より `WebApiProvider` を導入し、Cloudflare Worker 経由で Spotify 
 └──────┬───────┘                    └────────────────────┘
        │
        │  fetch /track?id=xxx
+       │  fetch /image?url=xxx (画像プロキシ)
        ▼
 ┌────────────────────┐  Client Credentials  ┌──────────────────┐
 │ Cloudflare Workers  │ ──────────────────→  │    Spotify API    │
 │ tunecard-api.       │                      │  api.spotify.com  │
 │   workers.dev       │ ←──────────────────  │                  │
-└────────────────────┘   TrackInfo JSON      └──────────────────┘
+│                    │                      └──────────────────┘
+│                    │   画像プロキシ         ┌──────────────────┐
+│                    │ ──────────────────→  │  Spotify CDN      │
+│                    │ ←──────────────────  │  i.scdn.co        │
+└────────────────────┘   JPEG/PNG           └──────────────────┘
 ```
 
 ### CI/CD パイプライン

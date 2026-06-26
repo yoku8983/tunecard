@@ -1,12 +1,9 @@
 import type { ShareSettings } from '../core/types.ts';
-import { canShareFiles } from '../utils/canShareFiles.ts';
 
 interface SettingsPanelProps {
   settings: ShareSettings;
   onSettingsChange: (partial: Partial<ShareSettings>) => void;
 }
-
-const fileShareSupported = canShareFiles();
 
 export function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
   return (
@@ -20,26 +17,6 @@ export function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps
         />
         #NowPlaying を含める
       </label>
-
-      <div>
-        <label
-          className={`flex items-center gap-2 text-sm${!fileShareSupported ? ' opacity-50' : ''}`}
-        >
-          <input
-            type="checkbox"
-            checked={fileShareSupported && settings.attachImage}
-            onChange={(e) => onSettingsChange({ attachImage: e.target.checked })}
-            disabled={!fileShareSupported}
-            className="h-4 w-4 rounded accent-[#1DB954]"
-          />
-          ジャケット画像を添付
-        </label>
-        {!fileShareSupported && (
-          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-            画像付きシェアはスマホのみ対応しています
-          </p>
-        )}
-      </div>
 
       <div>
         <label className="block text-xs text-gray-500 dark:text-gray-400">

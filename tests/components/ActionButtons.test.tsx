@@ -47,32 +47,28 @@ function disableWebShareApi() {
 }
 
 describe('ActionButtons', () => {
-  it('Web Share API対応時に4つのボタンが表示される', () => {
-    enableWebShareApi();
-    render(<ActionButtons shareText={shareText} attachImage={false} />);
+  it('X・Bluesky・コピーの3ボタンが常時表示される', () => {
+    disableWebShareApi();
+    render(<ActionButtons shareText={shareText} />);
 
-    expect(screen.getByText('📋 コピー')).toBeInTheDocument();
     expect(screen.getByText('𝕏 で投稿')).toBeInTheDocument();
     expect(screen.getByText('🦋 Bluesky')).toBeInTheDocument();
-    expect(screen.getByText('↗ 共有')).toBeInTheDocument();
+    expect(screen.getByText('📋 投稿文をコピー')).toBeInTheDocument();
   });
 
-  it('Web Share API非対応時は共有ボタンが非表示', () => {
-    disableWebShareApi();
-    render(<ActionButtons shareText={shareText} attachImage={false} />);
+  it('thumbnailUrl未指定時は画像付き共有ボタンが非表示', () => {
+    enableWebShareApi();
+    render(<ActionButtons shareText={shareText} />);
 
-    expect(screen.getByText('📋 コピー')).toBeInTheDocument();
-    expect(screen.getByText('𝕏 で投稿')).toBeInTheDocument();
-    expect(screen.getByText('🦋 Bluesky')).toBeInTheDocument();
-    expect(screen.queryByText('↗ 共有')).not.toBeInTheDocument();
+    expect(screen.queryByText('🖼 画像付きで共有')).not.toBeInTheDocument();
   });
 
   it('コピーボタンでクリップボードにコピーされる', async () => {
     disableWebShareApi();
     const user = userEvent.setup();
-    render(<ActionButtons shareText={shareText} attachImage={false} />);
+    render(<ActionButtons shareText={shareText} />);
 
-    await user.click(screen.getByText('📋 コピー'));
+    await user.click(screen.getByText('📋 投稿文をコピー'));
 
     expect(copyToClipboard).toHaveBeenCalledWith(shareText);
     expect(screen.getByText('✓ コピー済み')).toBeInTheDocument();
@@ -81,7 +77,7 @@ describe('ActionButtons', () => {
   it('XボタンでTwitter intent URLが開く', async () => {
     disableWebShareApi();
     const user = userEvent.setup();
-    render(<ActionButtons shareText={shareText} attachImage={false} />);
+    render(<ActionButtons shareText={shareText} />);
 
     await user.click(screen.getByText('𝕏 で投稿'));
 
@@ -94,7 +90,7 @@ describe('ActionButtons', () => {
   it('BlueskyボタンでBluesky intent URLが開く', async () => {
     disableWebShareApi();
     const user = userEvent.setup();
-    render(<ActionButtons shareText={shareText} attachImage={false} />);
+    render(<ActionButtons shareText={shareText} />);
 
     await user.click(screen.getByText('🦋 Bluesky'));
 
@@ -102,15 +98,5 @@ describe('ActionButtons', () => {
       `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`,
       '_blank',
     );
-  });
-
-  it('共有ボタンでnavigator.shareが呼ばれる', async () => {
-    enableWebShareApi();
-    const user = userEvent.setup();
-    render(<ActionButtons shareText={shareText} attachImage={false} />);
-
-    await user.click(screen.getByText('↗ 共有'));
-
-    expect(navigator.share).toHaveBeenCalledWith({ text: shareText });
   });
 });
