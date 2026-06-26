@@ -70,7 +70,7 @@ export function ActionButtons({ shareText, thumbnailUrl }: ActionButtonsProps) {
           type="button"
           onClick={handleShareWithImage}
           disabled={sharing}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1DB954] px-4 py-3 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50 sm:border sm:border-gray-300 sm:bg-white sm:text-gray-900 sm:hover:bg-gray-50 sm:hover:opacity-100 dark:sm:border-gray-600 dark:sm:bg-gray-800 dark:sm:text-gray-100 dark:sm:hover:bg-gray-700"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1DB954] px-4 py-3 font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50 sm:hidden"
         >
           {sharing ? '準備中…' : '🖼 画像付きで共有'}
         </button>
