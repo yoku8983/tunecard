@@ -5,3 +5,8 @@ compatibility_date = "2025-06-20"
 # Secrets (set via `npx wrangler secret put`):
 #   SPOTIFY_CLIENT_ID
 #   SPOTIFY_CLIENT_SECRET
+
+# CORS で許可するフロントエンドのオリジン（カンマ区切り。`https://*.example.com` でサブドメイン許可）
+# 本番 Pages・Pages のプレビュー・ローカル開発（vite dev / preview）
+[vars]
+ALLOWED_ORIGINS = "https://tunecard.pages.dev,https://*.tunecard.pages.dev,http://localhost:5173,http://localhost:4173"

@@ -1,6 +1,15 @@
+import {
+  isAllowedImageUrl,
+  isValidSpotifyId,
+  parseAllowedOrigins,
+  resolveAllowedOrigin,
+} from './validation';
+
 interface Env {
   SPOTIFY_CLIENT_ID: string;
   SPOTIFY_CLIENT_SECRET: string;
+  // カンマ区切りの許可オリジン（wrangler.toml の [vars]）。`https://*.example.com` 形式可
+  ALLOWED_ORIGINS?: string;
 }
 
 interface TokenCache {
@@ -36,16 +45,26 @@ interface TrackResponse {
 
 let tokenCache: TokenCache | null = null;
 
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+// 許可オリジンからのリクエストにだけ ACAO を付ける（それ以外はブラウザが CORS で弾く）。
+// オリジンごとに応答が変わるので、キャッシュ汚染防止に常に Vary: Origin を付ける。
+function buildCorsHeaders(request: Request, env: Env): Record<string, string> {
+  const headers: Record<string, string> = { Vary: 'Origin' };
+  const origin = resolveAllowedOrigin(
+    request.headers.get('Origin'),
+    parseAllowedOrigins(env.ALLOWED_ORIGINS),
+  );
+  if (origin) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type';
+  }
+  return headers;
+}
 
-function jsonResponse(body: unknown, status = 200): Response {
+function jsonResponse(body: unknown, cors: Record<string, string>, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    headers: { 'Content-Type': 'application/json', ...cors },
   });
 }
 
@@ -149,26 +168,18 @@ async function fetchPlaylist(playlistId: string, env: Env): Promise<TrackRespons
   };
 }
 
-const IMAGE_HOST_ALLOWLIST = ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-ak.spotifycdn.com'];
-
-async function proxyImage(imageUrl: string): Promise<Response> {
-  let parsed: URL;
-  try {
-    parsed = new URL(imageUrl);
-  } catch {
-    return jsonResponse({ error: 'Invalid url parameter' }, 400);
+async function proxyImage(imageUrl: string, cors: Record<string, string>): Promise<Response> {
+  if (!isAllowedImageUrl(imageUrl)) {
+    return jsonResponse({ error: 'Host not allowed' }, cors, 403);
   }
 
-  if (!IMAGE_HOST_ALLOWLIST.includes(parsed.hostname)) {
-    return jsonResponse({ error: 'Host not allowed' }, 403);
-  }
-
-  const upstream = await fetch(imageUrl);
+  // リダイレクトで許可外ホストへ飛ばされないよう追従しない
+  const upstream = await fetch(imageUrl, { redirect: 'manual' });
   if (!upstream.ok) {
-    return jsonResponse({ error: `Upstream returned ${upstream.status}` }, 502);
+    return jsonResponse({ error: `Upstream returned ${upstream.status}` }, cors, 502);
   }
 
-  const headers = new Headers(CORS_HEADERS);
+  const headers = new Headers(cors);
   const contentType = upstream.headers.get('Content-Type');
   if (contentType) {
     headers.set('Content-Type', contentType);
@@ -180,12 +191,14 @@ async function proxyImage(imageUrl: string): Promise<Response> {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const cors = buildCorsHeaders(request, env);
+
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: cors });
     }
 
     if (request.method !== 'GET') {
-      return jsonResponse({ error: 'Method not allowed' }, 405);
+      return jsonResponse({ error: 'Method not allowed' }, cors, 405);
     }
 
     const url = new URL(request.url);
@@ -193,15 +206,19 @@ export default {
     if (url.pathname === '/image') {
       const imageUrl = url.searchParams.get('url');
       if (!imageUrl) {
-        return jsonResponse({ error: 'Missing url parameter' }, 400);
+        return jsonResponse({ error: 'Missing url parameter' }, cors, 400);
       }
-      return proxyImage(imageUrl);
+      return proxyImage(imageUrl, cors);
     }
 
     const id = url.searchParams.get('id');
 
     if (!id) {
-      return jsonResponse({ error: 'Missing id parameter' }, 400);
+      return jsonResponse({ error: 'Missing id parameter' }, cors, 400);
+    }
+
+    if (!isValidSpotifyId(id)) {
+      return jsonResponse({ error: 'Invalid id parameter' }, cors, 400);
     }
 
     try {
@@ -218,13 +235,13 @@ export default {
           result = await fetchPlaylist(id, env);
           break;
         default:
-          return jsonResponse({ error: 'Not found' }, 404);
+          return jsonResponse({ error: 'Not found' }, cors, 404);
       }
 
-      return jsonResponse(result);
+      return jsonResponse(result, cors);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal error';
-      return jsonResponse({ error: message }, 502);
+      return jsonResponse({ error: message }, cors, 502);
     }
   },
 } satisfies ExportedHandler<Env>;
