@@ -4,12 +4,15 @@ import {
   parseAllowedOrigins,
   resolveAllowedOrigin,
 } from './validation';
+import { isRateLimited } from './rate-limit';
 
 interface Env {
   SPOTIFY_CLIENT_ID: string;
   SPOTIFY_CLIENT_SECRET: string;
   // カンマ区切りの許可オリジン（wrangler.toml の [vars]）。`https://*.example.com` 形式可
   ALLOWED_ORIGINS?: string;
+  // IP 単位のレート制限（wrangler.toml の [[ratelimits]]）。未設定なら制限なし
+  RATE_LIMITER?: RateLimit;
 }
 
 interface TokenCache {
@@ -195,6 +198,13 @@ export default {
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors });
+    }
+
+    if (await isRateLimited(env.RATE_LIMITER, request)) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...cors },
+      });
     }
 
     if (request.method !== 'GET') {

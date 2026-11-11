@@ -66,7 +66,7 @@ docs/              — PRD, ARCHITECTURE, ADR
 ## 重要な注意
 
 - Spotify Web API (Worker経由) でアーティスト名取得。Worker未設定時はoEmbedにフォールバック（artist=null）
-- Worker は入力検証（Spotify ID 22文字・画像URL許可リスト）と CORS オリジン制限あり（ADR-0007）。Pages の URL を変えたら `worker/wrangler.toml` の `ALLOWED_ORIGINS` も更新する。検証ロジックのテストは `tests/worker/`
+- Worker は入力検証（Spotify ID 22文字・画像URL許可リスト）・CORS オリジン制限・IP単位レート制限（30回/60秒）あり（ADR-0007）。Pages の URL を変えたら `worker/wrangler.toml` の `ALLOWED_ORIGINS` も更新する。検証ロジックのテストは `tests/worker/`
 - テスト設定は `vitest.config.ts` に書く（`vite.config.ts` の `test` プロパティはVitest 4で非対応）
 - `baseUrl` は TypeScript 6 で非推奨。パスエイリアスは vite.config.ts の `resolve.alias` で設定
 

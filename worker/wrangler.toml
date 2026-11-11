@@ -10,3 +10,11 @@ compatibility_date = "2025-06-20"
 # 本番 Pages・Pages のプレビュー・ローカル開発（vite dev / preview）
 [vars]
 ALLOWED_ORIGINS = "https://tunecard.pages.dev,https://*.tunecard.pages.dev,http://localhost:5173,http://localhost:4173"
+
+# アクセス元 IP 単位のレート制限（Workers Rate Limiting バインディング）。period は 10 か 60（秒）のみ。
+# 1回のシェアで /track 等 1回 + /image 1回程度なので、通常利用では届かない上限にしている。
+# namespace_id はアカウント内で一意な任意の数値文字列。
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

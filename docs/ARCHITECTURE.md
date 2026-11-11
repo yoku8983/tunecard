@@ -98,6 +98,7 @@ interface OEmbedResponse {
 - **ネットワークエラー**: fetchの `TypeError` をキャッチ
 - **Worker の入力検証**（ADR-0007）: `id` は `^[A-Za-z0-9]{22}$` 以外を 400、`/image?url=` は https・許可ホスト完全一致のみ（リダイレクト非追従）。検証関数は `worker/src/validation.ts`
 - **Worker の CORS**（ADR-0007）: `ALLOWED_ORIGINS` に一致したオリジンにのみ `Access-Control-Allow-Origin` を返す（`Vary: Origin`）
+- **Worker のレート制限**（ADR-0007）: アクセス元 IP ごとに 30回/60秒。超過時 429（フロントは通常の Provider 失敗として oEmbed にフォールバック）
 
 ## 5. テンプレート仕様
 
@@ -190,6 +191,7 @@ v1.1 より `WebApiProvider` を導入し、Cloudflare Worker 経由で Spotify 
 |------|---------|------|
 | `VITE_WORKER_URL` | GitHub Variables (`WORKER_URL`) → ビルド時注入 | フロントからWorkerへの接続先 |
 | `ALLOWED_ORIGINS` | `worker/wrangler.toml` の `[vars]` | Worker が CORS で許可するフロントのオリジン（カンマ区切り、`https://*.` ワイルドカード可） |
+| `RATE_LIMITER` | `worker/wrangler.toml` の `[[ratelimits]]` | Worker のIP単位レート制限（30回/60秒） |
 | `SPOTIFY_CLIENT_ID` | Wrangler Secrets | Spotify Web API 認証 |
 | `SPOTIFY_CLIENT_SECRET` | Wrangler Secrets | Spotify Web API 認証 |
 | `CLOUDFLARE_API_TOKEN` | GitHub Secrets | CI/CD デプロイ用 |

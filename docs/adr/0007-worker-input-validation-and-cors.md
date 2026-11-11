@@ -24,6 +24,10 @@ Accepted
   `https://*.tunecard.pages.dev` 形式のサブドメインワイルドカードを許可する。応答は常に `Vary: Origin`。
 - 検証ロジックは Workers 固有 API に依存しない純粋関数として `worker/src/validation.ts` に切り出し、
   フロントの Vitest（`tests/worker/`）でテストする（Worker 側にテスト基盤を追加しないため）。
+- **レート制限**: CORS はブラウザ経由しか防げないため、Workers Rate Limiting バインディング
+  （`wrangler.toml` の `[[ratelimits]]`、`env.RATE_LIMITER`）でアクセス元 IP（`CF-Connecting-IP`）ごとに
+  60秒あたり30回までに制限し、超過時は 429 + `Retry-After: 60` を返す。OPTIONS（プリフライト）は数えない。
+  バインディング未設定や障害時は通す（fail-open）。ロジックは `worker/src/rate-limit.ts`。
 
 ## 理由
 
@@ -32,7 +36,8 @@ Accepted
 
 ## 結果・制約
 
-- CORS はブラウザ経由の利用しか防げない。curl 等の直接アクセスは引き続き可能なため、大量アクセス対策には
-  別途レート制限（Cloudflare 側）が必要。
+- レート制限のカウントは Cloudflare の拠点ごとで、厳密な上限ではない（大量アクセスを大まかに止める用途）。
+  上限は1回のシェアで2リクエスト程度という利用実態から、通常利用では届かない値にしている。
+- WAF のレート制限ルールは独自ドメイン（Cloudflare ゾーン）が前提のため、`workers.dev` の本 Worker では使わない。
 - Pages の本番 URL・カスタムドメインを変えたら `ALLOWED_ORIGINS` を更新すること（漏れると Worker 呼び出しが
   CORS で失敗し、oEmbed フォールバック＝artist=null になり、画像付き共有も失敗する）。
